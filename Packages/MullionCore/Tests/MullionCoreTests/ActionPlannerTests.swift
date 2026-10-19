@@ -39,6 +39,20 @@ struct ActionPlannerTests {
         #expect(result?.record == nil)
     }
 
+    /// Regression: Maximize Height used to pull a window that spans two displays onto one of them.
+    @Test func maximizeHeightKeepsXOfAWindowSpanningTwoDisplays() {
+        // Mostly on the laptop, 130 pt on the external display.
+        let spanning = CGRect(x: 1200, y: 200, width: 400, height: 300)
+        let result = plan(.maximizeHeight, window: spanning, screens: Self.twoScreens)
+        #expect(result?.target == CGRect(x: 1200, y: 37, width: 400, height: 919))
+    }
+
+    @Test func maximizeHeightBringsBackAWindowPastAnEdgeWithNoDisplayBehindIt() {
+        let pastRightEdge = CGRect(x: 1300, y: 200, width: 400, height: 300)
+        let result = plan(.maximizeHeight, window: pastRightEdge, screens: Self.laptop)
+        #expect(result?.target == CGRect(x: 1070, y: 37, width: 400, height: 919))
+    }
+
     @Test func noScreensMeansNoPlan() {
         #expect(plan(.leftHalf, screens: []) == nil)
     }

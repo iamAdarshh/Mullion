@@ -186,6 +186,13 @@ struct ActionCalculatorTests {
         }
     }
 
+    @Test func maximizeHeightOnOneScreenBringsAWindowPastTheEdgeBack() {
+        let pastRightEdge = CGRect(x: 1300, y: 200, width: 400, height: 300)
+        #expect(target(.maximizeHeight, on: Screens.macBookAir13, window: pastRightEdge) == CGRect(
+            x: 1070, y: 37, width: 400, height: 919
+        ))
+    }
+
     @Test func smallerStopsAtAQuarterOfTheScreen() {
         // 400 - 60 < 25 % of 1470 and 250 - 60 < 25 % of 919, so neither dimension shrinks.
         let small = CGRect(x: 100, y: 200, width: 400, height: 250)
@@ -250,9 +257,11 @@ struct ActionCalculatorTests {
             #expect(rect == rect.integral, "\(action)")
         }
     }
+}
 
-    // MARK: Minimum size (AC-2)
+// MARK: Minimum size (AC-2)
 
+extension ActionCalculatorTests {
     @Test func reanchoredKeepsTheTargetOriginWhenItFits() {
         let rect = ActionCalculator.reanchored(
             actual: CGRect(x: 300, y: 300, width: 500, height: 600),
@@ -269,6 +278,28 @@ struct ActionCalculatorTests {
             visibleFrame: Screens.macBookAir13.visibleFrame
         )
         #expect(rect == CGRect(x: 670, y: 37, width: 800, height: 919))
+    }
+
+    /// Regression: Grow and Restore can aim at a frame that spans two displays. When the app then
+    /// rounds the size (Terminal's character grid), the window used to be pulled onto one screen.
+    @Test func reanchoredLeavesATargetThatSpansDisplaysWhereItIs() {
+        let rect = ActionCalculator.reanchored(
+            actual: CGRect(x: 970, y: 170, width: 1057, height: 360),
+            target: CGRect(x: 970, y: 170, width: 1060, height: 360),
+            visibleFrame: Screens.macBookAir13.visibleFrame
+        )
+        #expect(rect == CGRect(x: 970, y: 170, width: 1057, height: 360))
+    }
+
+    /// Regression: a target rounded to 981 on a visible frame ending at 980.5 was taken for a
+    /// target that spans displays, so a window with a minimum height was left hanging off the bottom.
+    @Test func reanchoredStillClampsWhenTheVisibleFrameHasFractionalEdges() {
+        let rect = ActionCalculator.reanchored(
+            actual: CGRect(x: 0, y: 509, width: 1470, height: 600),
+            target: CGRect(x: 0, y: 509, width: 1470, height: 472),
+            visibleFrame: CGRect(x: 0, y: 37.5, width: 1470, height: 943)
+        )
+        #expect(rect == CGRect(x: 0, y: 381, width: 1470, height: 600))
     }
 
     @Test(arguments: Screens.all)

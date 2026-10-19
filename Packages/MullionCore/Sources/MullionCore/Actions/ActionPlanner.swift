@@ -39,6 +39,9 @@ public enum ActionPlanner {
             if action.isHalf, let snapped, snapped.action == action {
                 return request.repeated(snapped)
             }
+            if action == .maximizeHeight, request.spansAnotherScreen {
+                return request.maximizeHeightInPlace()
+            }
             return request.apply(action, halfFraction: nil, on: screen)
         }
     }
@@ -70,6 +73,20 @@ public enum ActionPlanner {
                     .isTiled ? SnapRecord(action: action, halfFraction: halfFraction, frame: target) : nil
                 return ActionPlan(target: target, screen: screen, record: record)
             }
+        }
+
+        /// True when part of the window is on a display other than `screen`.
+        var spansAnotherScreen: Bool {
+            screens.contains { $0.id != screen.id && $0.frame.intersects(window) }
+        }
+
+        /// *Maximize Height* for a window that spans two displays: keep x and width (PRD §6.1)
+        /// instead of pulling it onto one screen.
+        func maximizeHeightInPlace() -> ActionPlan {
+            let target = ActionCalculator.heightColumn(
+                for: window, visibleFrame: screen.visibleFrame, gap: settings.gap
+            )
+            return ActionPlan(target: target, screen: screen, record: nil)
         }
 
         func repeated(_ snapped: SnapRecord) -> ActionPlan? {

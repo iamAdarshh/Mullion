@@ -39,9 +39,9 @@ public enum ActionCalculator {
                     height: size.height
                 )
             case .maximizeHeight:
-                let column = CGRect(x: window.minX, y: visible.minY, width: window.width, height: visible.height)
-                let gapped = column.insetBy(dx: 0, dy: settings.gap)
-                rect = gapped.clamped(to: visible)
+                // On its own screen the column is kept inside it. `ActionPlanner` keeps x for a window
+                // that spans another display, which only it can see.
+                rect = heightColumn(for: window, visibleFrame: visible, gap: settings.gap).clamped(to: visible)
             case .center:
                 let size = CGSize(width: min(window.width, visible.width), height: min(window.height, visible.height))
                 rect = CGRect(
@@ -82,11 +82,26 @@ public enum ActionCalculator {
         }
     }
 
+    /// *Maximize Height* without any horizontal correction: the window's x and width, the full height
+    /// of `visibleFrame` inset by `gap` at the top and bottom. Rounded to whole points.
+    public static func heightColumn(for window: CGRect, visibleFrame: CGRect, gap: CGFloat) -> CGRect {
+        CGRect(x: window.minX, y: visibleFrame.minY, width: window.width, height: visibleFrame.height)
+            .insetBy(dx: 0, dy: gap)
+            .roundedToEdges()
+    }
+
     /// Where a window ends up when the app refuses the target size, for example because of a minimum
-    /// size (AC-2): at the target's origin with the size the app kept, moved back inside the visible frame.
-    /// It never leaves the screen.
+    /// size (AC-2): at the target's origin with the size the app kept.
+    ///
+    /// When the target was inside `visibleFrame`, the window is moved back inside it, so it never leaves
+    /// the screen. A target that already reached past it (Grow or Restore on a window that spans two
+    /// displays) is left where it is: pulling it onto one screen would undo what the action meant to keep.
     public static func reanchored(actual: CGRect, target: CGRect, visibleFrame: CGRect) -> CGRect {
-        CGRect(origin: target.origin, size: actual.size).movedInside(visibleFrame).roundedToEdges()
+        let anchored = CGRect(origin: target.origin, size: actual.size)
+        // Targets are rounded to whole points, so compare against the rounded frame: a fractional
+        // edge (980.5) must not make an ordinary on-screen target look like it spans displays.
+        guard visibleFrame.roundedToEdges().contains(target) else { return anchored.roundedToEdges() }
+        return anchored.movedInside(visibleFrame).roundedToEdges()
     }
 
     // MARK: Private
