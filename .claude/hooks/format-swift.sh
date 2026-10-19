@@ -3,6 +3,9 @@
 # Never fails the tool call – formatting is best-effort.
 set -u
 
+# Hooks inherit Claude Code's environment, which may not include Homebrew.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 FILE_PATH=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
 
 case "$FILE_PATH" in
