@@ -121,7 +121,7 @@ If the user triggers the same half action twice in a row on the same window, and
 ### 6.9 Onboarding and permissions
 1. On first launch, a welcome window explains *why* Accessibility access is needed, and its button calls `AXIsProcessTrustedWithOptions` with the prompt option.
 2. Mullion polls for trust once per second while the welcome window is open, and continues automatically once access is granted.
-3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*.
+3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*. macOS has no public notification for trust changes, so Mullion re-checks every 5 s (timer with tolerance, to keep idle CPU near zero) and immediately whenever the menu opens or an action runs. *Grant Accessibility access…* reopens the welcome window.
 
 ### 6.10 Non-functional requirements
 | ID | Requirement |
