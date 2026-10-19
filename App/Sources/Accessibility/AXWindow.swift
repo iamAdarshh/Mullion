@@ -53,7 +53,17 @@ enum AXWindow {
     /// The first resize can be refused when the window would overflow its current screen, and the
     /// second one is needed after crossing displays. Apps with `AXEnhancedUserInterface` on (VoiceOver,
     /// some Electron and Chromium apps) animate or ignore resizes, so it is turned off for the move.
+    ///
+    /// - Throws: `AXWindowError.incompleteMove` when the window had already changed before the error.
     static func setFrame(_ frame: CGRect, of window: AXUIElement, pid: pid_t) throws {
+        // Fixed-size windows (Calculator) can only be moved. Asked before anything is written, so an
+        // app that has stopped answering costs one timeout and the window is left untouched.
+        var settable = DarwinBoolean(false)
+        let resizable = try resizability(
+            queryError: AXUIElementIsAttributeSettable(window, kAXSizeAttribute as CFString, &settable),
+            settable: settable.boolValue
+        )
+
         let app = application(pid)
         let hadEnhancedUI = (try? bool(app, enhancedUserInterfaceAttribute)) == true
         if hadEnhancedUI {
@@ -65,14 +75,35 @@ enum AXWindow {
             }
         }
 
-        // Fixed-size windows (Calculator) can only be moved.
-        let resizable = isSettable(window, kAXSizeAttribute)
+        var changed = false
         if resizable {
-            logFailure("first resize") { try setSize(window, frame.size) }
+            changed = logFailure("first resize") { try setSize(window, frame.size) }
         }
-        try setPosition(window, frame.origin)
-        if resizable {
-            try setSize(window, frame.size)
+        do {
+            try setPosition(window, frame.origin)
+            changed = true
+            if resizable {
+                try setSize(window, frame.size)
+            }
+        } catch let error as AXWindowError where changed {
+            throw AXWindowError.incompleteMove(error)
+        }
+    }
+
+    /// How `setFrame` treats the answer to "is the size settable?".
+    ///
+    /// A timeout aborts the move before anything is written: the app is busy, and every further call
+    /// would cost another timeout on the serial `AXQueue`. Any other error means "move only", as for a
+    /// fixed-size window, because the final resize would fail too and abort the move halfway.
+    static func resizability(queryError: AXError, settable: Bool) throws -> Bool {
+        switch queryError {
+        case .success:
+            return settable
+        case .cannotComplete:
+            throw AXWindowError.appNotResponding
+        default:
+            Log.ax.debug("Can't tell if the size is settable: \(queryError.rawValue, privacy: .public)")
+            return false
         }
     }
 
@@ -142,23 +173,16 @@ enum AXWindow {
         try AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, value).check()
     }
 
-    private static func isSettable(_ element: AXUIElement, _ attribute: String) -> Bool {
-        var settable = DarwinBoolean(false)
-        let error = AXUIElementIsAttributeSettable(element, attribute as CFString, &settable)
-        guard error == .success else {
-            Log.ax
-                .debug("Can't tell if \(attribute, privacy: .public) is settable: \(error.rawValue, privacy: .public)")
-            return false
-        }
-        return settable.boolValue
-    }
-
     /// Runs a step whose failure isn't fatal to the move, logging the error instead of throwing it.
-    private static func logFailure(_ step: StaticString, _ body: () throws -> Void) {
+    /// Returns whether the step succeeded.
+    @discardableResult
+    private static func logFailure(_ step: StaticString, _ body: () throws -> Void) -> Bool {
         do {
             try body()
+            return true
         } catch {
             Log.ax.debug("AX step '\(step, privacy: .public)' failed: \(String(describing: error), privacy: .public)")
+            return false
         }
     }
 }

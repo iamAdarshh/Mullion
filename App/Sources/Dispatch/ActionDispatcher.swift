@@ -75,6 +75,9 @@ final class ActionDispatcher {
             guard let window = try await windows.focusedWindow(pid: pid) else { return }
             try await apply(action, to: window)
             await forgetClosedWindows(except: window)
+        } catch let error as AXWindowError where error.isRoutine {
+            // The window closed mid-action, or the app is busy. Not worth keeping on disk.
+            Log.ax.info("\(action.rawValue, privacy: .public) skipped: \(String(describing: error), privacy: .public)")
         } catch {
             Log.ax.error("\(action.rawValue, privacy: .public) failed: \(String(describing: error), privacy: .public)")
         }
@@ -86,11 +89,35 @@ final class ActionDispatcher {
         guard let plan = ActionPlanner.plan(action, for: context, screens: screens.screens, settings: settings())
         else { return }
 
-        try await windows.setFrame(plan.target, of: window)
+        var moved = false
+        let actual: CGRect
+        do {
+            try await windows.setFrame(plan.target, of: window)
+            moved = true
+            actual = try await correctedFrame(of: window, plan: plan)
+        } catch {
+            // The window changed before the app gave up (for example resized, then timed out on the move):
+            // keep where it was, so Restore can still put it back (PRD §6.3). A failure that changed
+            // nothing leaves the store as it was.
+            if action != .restore, moved || (error as? AXWindowError)?.changedTheWindow == true {
+                store.rememberRestoreFrame(frame, of: window)
+            }
+            throw error
+        }
+
+        if action == .restore {
+            store.forget(window)
+        } else {
+            store.recordMove(of: window, from: frame, snap: plan.record?.with(frame: actual))
+        }
+    }
+
+    /// Reads the frame back after a move and corrects it when the app kept a different size.
+    private func correctedFrame(of window: WindowRef, plan: ActionPlan) async throws -> CGRect {
         var actual = try await windows.frame(of: window)
 
-        // The app kept a different size (minimum size, fixed size, aspect ratio):
-        // put the window at the target's origin and keep it on the target screen (AC-2).
+        // The app kept a different size (minimum size, fixed size, aspect ratio): put the window at
+        // the target's origin and, unless the target spanned displays, keep it on the target screen (AC-2).
         if !actual.isApproximatelyEqual(to: plan.target, tolerance: Self.frameTolerance) {
             let adjusted = ActionCalculator.reanchored(
                 actual: actual, target: plan.target, visibleFrame: plan.screen.visibleFrame
@@ -100,12 +127,7 @@ final class ActionDispatcher {
                 actual = try await windows.frame(of: window)
             }
         }
-
-        if action == .restore {
-            store.forget(window)
-        } else {
-            store.recordMove(of: window, from: frame, snap: plan.record?.with(frame: actual))
-        }
+        return actual
     }
 
     /// Drops windows that have closed since they were moved (PRD §6.3).

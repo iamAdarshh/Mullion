@@ -2,6 +2,8 @@
 
 Every shortcut can be remapped in **Settings → Shortcuts**. The defaults use the **⌃⌥** (Control + Option) prefix, which macOS and most apps leave free.
 
+**Without Accessibility access** the shortcuts are released, so other apps receive those keys. They come back within 5 s of access being granted again, or at once when you open the menu (PRD §6.9.3).
+
 **Conflicts to avoid.** macOS 15+ uses **fn ⌃ + arrows** and **fn ⌃ ⇧ + arrows** for its own tiling, and **⌃ + arrows** for Mission Control and switching Spaces. Mullion's defaults use none of these.
 
 ## v1

@@ -63,7 +63,7 @@ All target rects are computed against the **visible frame** of the screen that c
 
 **Acceptance criteria**
 - AC-1: Each action produces the expected rect to within 1 pt on 1×, 2× and mixed-scale display setups (unit-tested in `MullionCore`).
-- AC-2: If an app enforces a minimum size larger than the target, the window is placed at the target's origin and stays inside the visible frame. It must not end up on another display.
+- AC-2: If an app enforces a minimum size larger than the target, the window is placed at the target's origin and stays inside the visible frame. It must not end up on another display. Exception: when the target itself already spans displays (*Grow* or *Restore* on a window that spans two displays), the window stays at the target's origin and is not pulled onto one screen.
 - AC-3: Native full-screen windows, the desktop, and system UI (Dock, menu bar extras) are ignored silently.
 - AC-4: Actions on a window with no focus (for example, Finder with no windows open) do nothing and play no error sound.
 
@@ -123,7 +123,7 @@ If the user triggers the same half action twice in a row on the same window, and
 ### 6.9 Onboarding and permissions
 1. On first launch, a welcome window explains *why* Accessibility access is needed, and its button calls `AXIsProcessTrustedWithOptions` with the prompt option.
 2. Mullion polls for trust once per second while the welcome window is open, and continues automatically once access is granted.
-3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*. macOS has no public notification for trust changes, so Mullion re-checks every 5 s (timer with tolerance, to keep idle CPU near zero) and immediately whenever the menu opens or an action runs. *Grant Accessibility access…* reopens the welcome window.
+3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*. Mullion's global shortcuts are released while trust is missing, so other apps receive those keys (a registered hotkey would otherwise swallow them). macOS has no public notification for trust changes, so Mullion re-checks every 5 s (timer with tolerance, to keep idle CPU near zero) and immediately whenever the menu opens or an action runs from the menu or a shortcut. A re-grant is therefore picked up within 5 s, or at once when the menu opens, and the shortcuts come back with it. *Grant Accessibility access…* reopens the welcome window.
 
 ### 6.10 Non-functional requirements
 | ID | Requirement |

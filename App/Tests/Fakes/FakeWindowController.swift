@@ -18,6 +18,7 @@ actor FakeWindowController: WindowControlling {
     private(set) var isAliveCalls: [pid_t] = []
     private var focused: WindowRef?
     private var setFrameError: AXWindowError?
+    private var resizesBeforeFailing = false
 
     /// A fresh window ref. Creating an application element makes no IPC call, so any pid works.
     /// Pass `second: true` for another window of the same app (it uses a different element).
@@ -37,8 +38,12 @@ actor FakeWindowController: WindowControlling {
         windows[window]?.isAlive = false
     }
 
-    func failSetFrame(with error: AXWindowError?) {
+    /// Makes `setFrame` throw `error`. With `afterResizing`, the window takes the new size first and
+    /// keeps its old position, like a real app that times out between the size and position calls,
+    /// and the error is wrapped in `incompleteMove` as `AXWindow` does.
+    func failSetFrame(with error: AXWindowError?, afterResizing: Bool = false) {
         setFrameError = error
+        resizesBeforeFailing = afterResizing
     }
 
     func frame(ofWindow window: WindowRef) -> CGRect? {
@@ -59,7 +64,7 @@ actor FakeWindowController: WindowControlling {
     }
 
     func setFrame(_ frame: CGRect, of window: WindowRef) throws {
-        if let setFrameError {
+        if let setFrameError, !resizesBeforeFailing {
             throw setFrameError
         }
         guard var fake = windows[window], fake.isAlive else { throw AXWindowError.elementGone }
@@ -70,6 +75,11 @@ actor FakeWindowController: WindowControlling {
                 height: max(frame.height, fake.minimumSize.height)
             )
             : fake.frame.size
+        if let setFrameError {
+            fake.frame.size = size
+            windows[window] = fake
+            throw AXWindowError.incompleteMove(setFrameError)
+        }
         fake.frame = CGRect(origin: frame.origin, size: size)
         windows[window] = fake
     }

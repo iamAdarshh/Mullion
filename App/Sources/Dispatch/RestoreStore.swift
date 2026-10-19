@@ -35,6 +35,16 @@ final class RestoreStore {
         entries[window] = entry
     }
 
+    /// Keeps the frame from before a move that failed halfway, so *Restore* can still undo it.
+    /// The snap record is left alone, so a later repeat or display move still knows the last action.
+    func rememberRestoreFrame(_ originalFrame: CGRect, of window: WindowRef) {
+        var entry = entries[window] ?? Entry()
+        if entry.restoreFrame == nil {
+            entry.restoreFrame = originalFrame
+        }
+        entries[window] = entry
+    }
+
     /// Forgets a window, after it was restored or once it has closed.
     func forget(_ window: WindowRef) {
         entries[window] = nil

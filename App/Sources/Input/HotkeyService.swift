@@ -22,4 +22,14 @@ final class HotkeyService {
         }
         Log.hotkey.info("Registered hotkeys for \(WindowAction.allCases.count, privacy: .public) actions")
     }
+
+    /// Releases every hotkey while Accessibility is revoked (PRD §6.9.3). A registered Carbon hotkey
+    /// swallows the key press, so the frontmost app would lose ⌃⌥← even though Mullion can't act on it.
+    ///
+    /// Uses the library's global switch, so the per-shortcut enabled state (for later features such as
+    /// Settings) is left alone.
+    func setEnabled(_ enabled: Bool) {
+        KeyboardShortcuts.isEnabled = enabled
+        Log.hotkey.info("Hotkeys \(enabled ? "enabled" : "disabled", privacy: .public)")
+    }
 }

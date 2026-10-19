@@ -261,6 +261,18 @@ struct ActionDispatcherTests {
         #expect(await harness.frame?.width == 980)
     }
 
+    /// Regression: the minimum-size correction used to pull a window that spans two displays onto
+    /// one screen, undoing Grow's promise to keep it where it is.
+    @Test func growOnAWindowSpanningDisplaysStaysPutWhenTheAppKeepsADifferentSize() async {
+        let harness = Harness(screens: [FakeScreens.laptop, FakeScreens.externalRight])
+        let spanning = CGRect(x: 1000, y: 200, width: 1000, height: 300)
+        await harness.addFocusedWindow(frame: spanning, minimumSize: CGSize(width: 1100, height: 0))
+
+        await harness.perform(.larger)
+
+        #expect(await harness.frame == CGRect(x: 1000, y: 170, width: 1100, height: 360))
+    }
+
     // MARK: Displays (PRD §6.5)
 
     @Test func nextDisplayKeepsTheSnappedAction() async {
@@ -274,7 +286,7 @@ struct ActionDispatcherTests {
 
     // MARK: Errors
 
-    @Test func axErrorsAreSwallowedAndNothingIsRemembered() async {
+    @Test func aFailureThatChangedNothingIsForgotten() async {
         let harness = Harness()
         await harness.addFocusedWindow()
         await harness.windows.failSetFrame(with: .appNotResponding)
@@ -283,5 +295,35 @@ struct ActionDispatcherTests {
 
         #expect(await harness.frame == Self.floating)
         #expect(harness.dispatcher.rememberedWindows.isEmpty)
+    }
+
+    /// Regression: a failed action used to clear the snap record, so the next press restarted the
+    /// cycle at ½ instead of moving on to ⅔.
+    @Test func aFailedRepeatKeepsTheCycleGoing() async {
+        let harness = Harness()
+        await harness.addFocusedWindow()
+        await harness.perform(.leftHalf)
+
+        await harness.windows.failSetFrame(with: .appNotResponding)
+        await harness.perform(.leftHalf)
+        await harness.windows.failSetFrame(with: nil)
+        await harness.perform(.leftHalf)
+
+        #expect(await harness.frame?.width == 980)
+    }
+
+    /// Regression: the restore frame used to be saved only after every AX step succeeded, so a window
+    /// that was resized before the app timed out could never be restored.
+    @Test func aMoveThatFailsHalfwayCanStillBeRestored() async {
+        let harness = Harness()
+        await harness.addFocusedWindow()
+        await harness.windows.failSetFrame(with: .appNotResponding, afterResizing: true)
+        await harness.perform(.leftHalf)
+        #expect(await harness.frame != Self.floating)
+
+        await harness.windows.failSetFrame(with: nil)
+        await harness.perform(.restore)
+
+        #expect(await harness.frame == Self.floating)
     }
 }

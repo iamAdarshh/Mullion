@@ -48,8 +48,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.dispatcher = dispatcher
         self.hotkeys = hotkeys
 
-        accessibility.onTrustChange = { [weak menuBar] trusted in
+        accessibility.onTrustChange = { [weak menuBar, weak hotkeys] trusted in
             menuBar?.setAccessibilityTrusted(trusted)
+            hotkeys?.setEnabled(trusted)
         }
         menuBar.onMenuWillOpen = { [weak accessibility] in
             accessibility?.refresh()
@@ -63,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
+        hotkeys.setEnabled(accessibility.isTrusted)
         accessibility.start()
     }
 
