@@ -1,11 +1,10 @@
 import AppKit
 
-/// Wires the menu bar, Accessibility monitoring and onboarding together.
+/// Creates the long-lived services at launch and connects them.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var permission: PermissionMonitor?
+    private var accessibility: AccessibilityCoordinator?
     private var menuBar: MenuBarController?
-    private var onboarding: OnboardingWindowController?
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -19,66 +18,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let permission = PermissionMonitor(checker: AXPermission(), scheduler: TimerScheduler())
-        let menuBar = MenuBarController(isTrusted: permission.isTrusted)
-        self.permission = permission
+        let accessibility = AccessibilityCoordinator(
+            checker: AXPermission(),
+            scheduler: TimerScheduler(),
+            makeOnboarding: { OnboardingWindowController(onRequestAccess: $0) },
+            openSettings: { AXPermission.openSystemSettings() }
+        )
+        let menuBar = MenuBarController(isTrusted: accessibility.isTrusted)
+        self.accessibility = accessibility
         self.menuBar = menuBar
 
-        permission.onChange = { [weak self] trusted in
-            self?.accessibilityTrustChanged(trusted)
+        accessibility.onTrustChange = { [weak menuBar] trusted in
+            menuBar?.setAccessibilityTrusted(trusted)
         }
-        menuBar.onMenuWillOpen = { [weak permission] in
-            permission?.refresh()
+        menuBar.onMenuWillOpen = { [weak accessibility] in
+            accessibility?.refresh()
         }
-        menuBar.onGrantAccess = { [weak self] in
-            self?.showOnboarding()
+        menuBar.onGrantAccess = { [weak accessibility] in
+            accessibility?.showOnboarding()
         }
 
-        Log.app.info("Launched, Accessibility trusted: \(permission.isTrusted, privacy: .public)")
-        if permission.isTrusted {
-            permission.startPolling(.background)
-        } else {
-            showOnboarding()
-        }
+        Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
+        accessibility.start()
     }
 
     func applicationSupportsSecureRestorableState(_: NSApplication) -> Bool {
         true
-    }
-
-    private func accessibilityTrustChanged(_ trusted: Bool) {
-        menuBar?.setAccessibilityTrusted(trusted)
-        if trusted {
-            // Closing triggers `onClose`, which drops back to background polling.
-            onboarding?.close()
-        }
-    }
-
-    private func showOnboarding() {
-        guard let permission else { return }
-        if onboarding == nil {
-            let controller = OnboardingWindowController { [weak self] in
-                self?.requestAccess()
-            }
-            controller.onClose = { [weak self] in
-                self?.onboarding = nil
-                self?.permission?.startPolling(.background)
-            }
-            onboarding = controller
-        }
-        onboarding?.present()
-        permission.startPolling(.onboarding)
-    }
-
-    private func requestAccess() {
-        guard let permission else { return }
-        switch permission.requestTrust() {
-        case .alreadyTrusted:
-            permission.refresh()
-        case .promptShown:
-            break
-        case .openSettings:
-            AXPermission.openSystemSettings()
-        }
     }
 }
