@@ -3,8 +3,7 @@ import SwiftUI
 
 /// Hosts `OnboardingView` in a standard window.
 @MainActor
-final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
-    /// Called when the window closes, whether the user closed it or access was granted.
+final class OnboardingWindowController: NSWindowController, NSWindowDelegate, OnboardingPresenting {
     var onClose: (() -> Void)?
 
     init(onRequestAccess: @escaping () -> Void) {
