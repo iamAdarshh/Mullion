@@ -14,14 +14,14 @@ later ─ M9 Window thumbnail (exploratory)
 
 ## M0: Scaffold
 Goal: an empty but correct app skeleton that every later milestone builds on.
-- [ ] `project.yml` (XcodeGen) defining the `Mullion` app target, the `MullionCore` local Swift package, and test targets
+- [x] `project.yml` (XcodeGen) defining the `Mullion` app target, the `MullionCore` local Swift package, and test targets
 - [ ] `Makefile` targets: `bootstrap`, `build`, `test`, `test-core`, `test-app`, `run`, `lint`, `format`, `clean`
 - [ ] The app runs as a menu bar agent (`LSUIElement = YES`) with a placeholder menu: *Settings…*, *Quit*
 - [ ] Accessibility onboarding flow (PRD §6.9)
 - [ ] `os.Logger` categories set up (`ax`, `hotkey`, `drag`, `layout`, `settings`)
 - [ ] CI is green: lint, `swift test` for MullionCore, and `xcodebuild build` for the app
-- [ ] The DEBUG build has a different bundle ID (`…mullion.debug`) so the Accessibility grant for the dev build doesn't conflict with a release install
-- [ ] `Config/Base.xcconfig` + `Config/Local.xcconfig.example` (gitignored `Local.xcconfig` holds `DEVELOPMENT_TEAM` for a stable debug signature; see SETUP.md §Troubleshooting)
+- [x] The DEBUG build has a different bundle ID (`…mullion.debug`) so the Accessibility grant for the dev build doesn't conflict with a release install
+- [x] `Config/Base.xcconfig` + `Config/Local.xcconfig.example` (gitignored `Local.xcconfig` holds `DEVELOPMENT_TEAM` for a stable debug signature; see SETUP.md §Troubleshooting)
 
 **Exit criteria:** a fresh clone followed by `make bootstrap run` shows the menu bar icon and the permission prompt, and CI passes.
 

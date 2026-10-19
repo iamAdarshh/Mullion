@@ -1,0 +1,9 @@
+// Copy to Config/Local.xcconfig (gitignored) to sign debug builds with a stable certificate.
+// A stable signature keeps the Accessibility grant across rebuilds (docs/SETUP.md#troubleshooting).
+//
+// 1. Xcode → Settings → Accounts: add your Apple ID (a free account works).
+// 2. Find your Team ID: Xcode → Settings → Accounts → your team, or developer.apple.com → Membership.
+// 3. Fill it in below, then run `make bootstrap build`.
+
+DEVELOPMENT_TEAM = ABCDE12345
+MULLION_CODE_SIGN_IDENTITY = Apple Development

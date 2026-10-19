@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Intentionally empty. Mullion is not sandboxed (the Accessibility API does not work in the
+  App Sandbox) and needs no Hardened Runtime exceptions. Add an entitlement only with a reason.
+-->
+<plist version="1.0">
+<dict/>
+</plist>

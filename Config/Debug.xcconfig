@@ -1,0 +1,16 @@
+#include "Base.xcconfig"
+
+// The debug build has its own bundle ID and name, so its Accessibility grant
+// never conflicts with an installed release build.
+APP_BUNDLE_ID = io.github.iamadarshh.mullion.debug
+APP_PRODUCT_NAME = Mullion-Debug
+APP_DISPLAY_NAME = Mullion Debug
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+ONLY_ACTIVE_ARCH = YES
+ENABLE_TESTABILITY = YES
+DEBUG_INFORMATION_FORMAT = dwarf
+
+// Last, so a developer's local values win.
+#include? "Local.xcconfig"

@@ -1,0 +1,84 @@
+# XcodeGen spec – the source of truth for Mullion.xcodeproj (ADR-0004).
+# The .xcodeproj is gitignored. Run `make bootstrap` after editing this file.
+name: Mullion
+
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  developmentLanguage: en
+
+configs:
+  Debug: debug
+  Release: release
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+
+packages:
+  MullionCore:
+    path: Packages/MullionCore
+
+targets:
+  Mullion:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/Sources
+      - path: App/Resources
+    dependencies:
+      - package: MullionCore
+    settings:
+      base:
+        # Identity comes from Config/Debug.xcconfig / Release.xcconfig.
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        PRODUCT_NAME: $(APP_PRODUCT_NAME)
+        # Keep the module name stable even though the debug product is "Mullion-Debug",
+        # so tests can always `@testable import Mullion`.
+        PRODUCT_MODULE_NAME: Mullion
+        CODE_SIGN_IDENTITY: $(MULLION_CODE_SIGN_IDENTITY)
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: App/Mullion.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  MullionTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: App/Tests
+    dependencies:
+      - target: Mullion
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).tests
+        CODE_SIGN_IDENTITY: $(MULLION_CODE_SIGN_IDENTITY)
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: $(TEST_HOST)
+      configs:
+        Debug:
+          TEST_HOST: $(BUILT_PRODUCTS_DIR)/Mullion-Debug.app/Contents/MacOS/Mullion-Debug
+        Release:
+          TEST_HOST: $(BUILT_PRODUCTS_DIR)/Mullion.app/Contents/MacOS/Mullion
+
+schemes:
+  Mullion:
+    build:
+      targets:
+        Mullion: all
+        MullionTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - MullionTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
