@@ -33,6 +33,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [ ] Restore (PRD §6.3)
 - [ ] Next / previous display (PRD §6.5)
 - [ ] Every action is listed in the menu bar with its shortcut
+- [ ] Actions are disabled while Accessibility is revoked, and every action re-checks trust first (PRD §6.9.3)
 
 **Exit criteria:** PRD AC-1 to AC-4 pass, and the test-matrix rows tagged `M1` pass on a laptop alone and on a laptop with one external display.
 
