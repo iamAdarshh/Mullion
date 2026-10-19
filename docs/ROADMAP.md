@@ -26,14 +26,14 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 **Exit criteria:** a fresh clone followed by `make bootstrap run` shows the menu bar icon and the permission prompt, and CI passes.
 
 ## M1: Keyboard snapping
-- [ ] `MullionCore/Geometry`: coordinate conversion (AppKit ↔ AX), visible frame, gaps, and every action in PRD §6.1, with 100 % unit-test coverage of the action math
-- [ ] `AXWindow` wrapper: get/set frame, focused window, minimum size handling, enhanced-UI workaround
-- [ ] Global hotkeys via the `KeyboardShortcuts` package, using the defaults from SHORTCUTS.md
-- [ ] Repeat-to-cycle (PRD §6.2)
-- [ ] Restore (PRD §6.3)
-- [ ] Next / previous display (PRD §6.5)
-- [ ] Every action is listed in the menu bar with its shortcut
-- [ ] Actions are disabled while Accessibility is revoked, and every action re-checks trust first (PRD §6.9.3)
+- [x] `MullionCore/Geometry`: coordinate conversion (AppKit ↔ AX), visible frame, gaps, and every action in PRD §6.1, with 100 % unit-test coverage of the action math
+- [x] `AXWindow` wrapper: get/set frame, focused window, minimum size handling, enhanced-UI workaround
+- [x] Global hotkeys via the `KeyboardShortcuts` package, using the defaults from SHORTCUTS.md
+- [x] Repeat-to-cycle (PRD §6.2)
+- [x] Restore (PRD §6.3)
+- [x] Next / previous display (PRD §6.5)
+- [x] Every action is listed in the menu bar with its shortcut
+- [x] Actions are disabled while Accessibility is revoked, and every action re-checks trust first (PRD §6.9.3)
 
 **Exit criteria:** PRD AC-1 to AC-4 pass, and the test-matrix rows tagged `M1` pass on a laptop alone and on a laptop with one external display.
 

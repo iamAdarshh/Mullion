@@ -41,7 +41,7 @@ macOS window management is still mostly manual. Since Sequoia, macOS can tile to
 ## 6. v1 requirements
 
 ### 6.1 Window actions
-All target rects are computed against the **visible frame** of the screen that contains most of the window, then inset by the **gap** setting (default 0 pt, range 0–40).
+All target rects are computed against the **visible frame** of the screen that contains most of the window, then inset by the **gap** setting (default 0 pt, range 0–40). Gaps apply to tiled actions (halves, quarters, thirds, two-thirds, sixths, Maximize) and vertically to Maximize Height: edges on the screen edge are inset by the full gap and edges shared with a neighbouring tile by half of it, so two snapped windows sit exactly one gap apart. Every target rect is rounded to whole points on its edges, so neighbouring tiles touch exactly.
 
 | Action ID | Name | Geometry (fraction of visible frame) |
 |---|---|---|
@@ -59,19 +59,21 @@ All target rects are computed against the **visible frame** of the screen that c
 | `nextDisplay` / `previousDisplay` | Move to Next / Previous Display | keep the window's relative position and size proportionally, clamped |
 | `larger` / `smaller` | Grow / Shrink | ±30 pt on each side (step configurable), clamped |
 
-"First" and "last" mean left and right on landscape screens, top and bottom on portrait screens (where height > width).
+"First" and "last" mean left and right on landscape screens, top and bottom on portrait screens (where height > width). On portrait screens the six sixths form 2 columns × 3 rows, in reading order: `topLeftSixth`, `topCenterSixth` (first row), `topRightSixth`, `bottomLeftSixth` (second row), `bottomCenterSixth`, `bottomRightSixth` (third row). Shrink never makes a dimension smaller than 25 % of the visible frame.
 
 **Acceptance criteria**
 - AC-1: Each action produces the expected rect to within 1 pt on 1×, 2× and mixed-scale display setups (unit-tested in `MullionCore`).
-- AC-2: If an app enforces a minimum size larger than the target, the window is placed at the target's origin and stays inside the visible frame. It must not end up on another display.
+- AC-2: If an app enforces a minimum size larger than the target, the window is placed at the target's origin and stays inside the visible frame. It must not end up on another display. Exception: when the target itself already spans displays (*Grow* or *Restore* on a window that spans two displays), the window stays at the target's origin and is not pulled onto one screen.
 - AC-3: Native full-screen windows, the desktop, and system UI (Dock, menu bar extras) are ignored silently.
 - AC-4: Actions on a window with no focus (for example, Finder with no windows open) do nothing and play no error sound.
 
 ### 6.2 Cycling (repeat to cycle)
 If the user triggers the same half action twice in a row on the same window, and the window already matches that action's current size, the size steps through **½ → ⅔ → ⅓ → ½**. The setting is *Repeated shortcuts: Cycle sizes / Do nothing / Move to next display* (default: Cycle sizes).
+- "Twice in a row" means the last action Mullion applied to that window was this action and the window is still within 2 pt of where Mullion put it. There is no time limit. A window the user has moved since starts again at ½.
+- Only the four half actions repeat this way.
 
 ### 6.3 Restore
-- Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes.
+- Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
 - `restore` brings back that frame. Manually dragging a snapped window away from its snapped position restores its original *size* under the cursor (the same behaviour as Magnet and Windows).
 
 ### 6.4 Drag to snap
@@ -95,7 +97,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - AC-6: Snapping works on every connected display, including a display placed above or below the main display.
 
 ### 6.5 Multi-display
-- `nextDisplay` and `previousDisplay` order displays by their x position, then y (left to right, top to bottom).
+- `nextDisplay` and `previousDisplay` order displays by their x position, then y (left to right, top to bottom), and wrap around from the last display to the first.
 - If the window was snapped, it keeps the same *action* on the new display. For example, a left-half window becomes the left half of the next display. Otherwise its frame is scaled proportionally.
 - Up to 6 displays are supported and tested. More may work.
 
@@ -121,7 +123,7 @@ If the user triggers the same half action twice in a row on the same window, and
 ### 6.9 Onboarding and permissions
 1. On first launch, a welcome window explains *why* Accessibility access is needed, and its button calls `AXIsProcessTrustedWithOptions` with the prompt option.
 2. Mullion polls for trust once per second while the welcome window is open, and continues automatically once access is granted.
-3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*. macOS has no public notification for trust changes, so Mullion re-checks every 5 s (timer with tolerance, to keep idle CPU near zero) and immediately whenever the menu opens or an action runs. *Grant Accessibility access…* reopens the welcome window.
+3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*. Mullion's global shortcuts are released while trust is missing, so other apps receive those keys (a registered hotkey would otherwise swallow them). macOS has no public notification for trust changes, so Mullion re-checks every 5 s (timer with tolerance, to keep idle CPU near zero) and immediately whenever the menu opens or an action runs from the menu or a shortcut. A re-grant is therefore picked up within 5 s, or at once when the menu opens, and the shortcuts come back with it. *Grant Accessibility access…* reopens the welcome window.
 
 ### 6.10 Non-functional requirements
 | ID | Requirement |

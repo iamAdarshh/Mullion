@@ -20,6 +20,10 @@ configFiles:
 packages:
   MullionCore:
     path: Packages/MullionCore
+  # ADR-0005: exact pins only.
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    exactVersion: 3.1.0
 
 targets:
   Mullion:
@@ -30,6 +34,7 @@ targets:
       - path: App/Resources
     dependencies:
       - package: MullionCore
+      - package: KeyboardShortcuts
     settings:
       base:
         # Identity comes from Config/Debug.xcconfig / Release.xcconfig.

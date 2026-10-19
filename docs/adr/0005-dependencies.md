@@ -10,9 +10,11 @@
 4. MullionCore has **zero** third-party dependencies.
 
 ## Approved
-| Package | Licence | Used for | Why not build it |
-|---|---|---|---|
-| [sindresorhus/KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | MIT | Global hotkeys, the recorder UI, and storing shortcuts | Carbon hotkey plumbing plus a good recorder UI is weeks of work, and this package is mature and widely used |
+| Package | Pin | Licence | Used for | Why not build it |
+|---|---|---|---|---|
+| [sindresorhus/KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) | 3.1.0 (exact) | MIT | Global hotkeys, the recorder UI, and storing shortcuts | Carbon hotkey plumbing plus a good recorder UI is weeks of work, and this package is mature and widely used |
+
+**KeyboardShortcuts 3.1.0** (pinned 2026-10-19, M1): chosen over 2.4.0 for its macOS 27 compatibility fixes and the fix for a release-build crash with the Swift 6.3 compiler. It needs Swift tools 6.2, so CI runs on the `macos-26` runner image (Xcode 26).
 
 ## Candidates (need an ADR when adopted)
 | Package | For | Notes |

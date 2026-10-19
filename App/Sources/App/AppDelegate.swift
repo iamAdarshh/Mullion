@@ -5,6 +5,8 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var accessibility: AccessibilityCoordinator?
     private var menuBar: MenuBarController?
+    private var dispatcher: ActionDispatcher?
+    private var hotkeys: HotkeyService?
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -24,12 +26,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             makeOnboarding: { OnboardingWindowController(onRequestAccess: $0) },
             openSettings: { AXPermission.openSystemSettings() }
         )
+        let preferences = Preferences()
+        let dispatcher = ActionDispatcher(
+            windows: AXQueue(),
+            screens: SystemScreens(),
+            settings: { preferences.actionSettings },
+            isTrusted: { [weak accessibility] in
+                // Re-check before every action, so a revocation is noticed right away (PRD §6.9.3).
+                accessibility?.refresh()
+                return accessibility?.isTrusted ?? false
+            },
+            frontmostPID: { Self.frontmostOtherAppPID() },
+            isProcessRunning: { NSRunningApplication(processIdentifier: $0) != nil }
+        )
         let menuBar = MenuBarController(isTrusted: accessibility.isTrusted)
+        let hotkeys = HotkeyService { [weak dispatcher] action in
+            dispatcher?.perform(action)
+        }
         self.accessibility = accessibility
         self.menuBar = menuBar
+        self.dispatcher = dispatcher
+        self.hotkeys = hotkeys
 
-        accessibility.onTrustChange = { [weak menuBar] trusted in
+        accessibility.onTrustChange = { [weak menuBar, weak hotkeys] trusted in
             menuBar?.setAccessibilityTrusted(trusted)
+            hotkeys?.setEnabled(trusted)
         }
         menuBar.onMenuWillOpen = { [weak accessibility] in
             accessibility?.refresh()
@@ -37,12 +58,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.onGrantAccess = { [weak accessibility] in
             accessibility?.showOnboarding()
         }
+        menuBar.onAction = { [weak dispatcher] action in
+            dispatcher?.perform(action)
+        }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
+        hotkeys.start()
+        hotkeys.setEnabled(accessibility.isTrusted)
         accessibility.start()
     }
 
     func applicationSupportsSecureRestorableState(_: NSApplication) -> Bool {
         true
+    }
+
+    /// The frontmost app's pid, or `nil` when that's Mullion itself: never act on our own windows.
+    private static func frontmostOtherAppPID() -> pid_t? {
+        guard let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier,
+              pid != ProcessInfo.processInfo.processIdentifier
+        else { return nil }
+        return pid
     }
 }

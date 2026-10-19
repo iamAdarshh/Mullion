@@ -26,14 +26,14 @@
 ## App-level fakes
 ```swift
 protocol WindowControlling: Sendable {
-    func focusedWindow() async throws -> WindowRef?
+    func focusedWindow(pid: pid_t) async throws -> WindowRef?
     func frame(of: WindowRef) async throws -> CGRect
     func setFrame(_: CGRect, of: WindowRef) async throws
-    func minimumSize(of: WindowRef) async -> CGSize?
+    func isAlive(_: WindowRef) async -> Bool
 }
-protocol ScreenProviding { var screens: [ScreenGeometry] { get } }
+@MainActor protocol ScreenProviding { var screens: [ScreenGeometry] { get } }
 ```
-`FakeWindowController` records calls and can simulate minimum sizes, AX errors and slow apps.
+There is no public AX attribute for a window's minimum size, so the dispatcher sets the frame, reads it back, and re-anchors it when the app kept a different size. `FakeWindowController` records calls and can simulate minimum sizes, fixed-size windows, closed windows and AX errors.
 
 ## Manual test matrix
 Run the rows for the milestone being closed. Record the results in the milestone's tracking issue.

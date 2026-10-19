@@ -1,42 +1,52 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Allow Mullion to arrange your windows" : {
-
-    },
-    "Grant Access…" : {
-
-    },
-    "Grant Accessibility access…" : {
-
-    },
-    "Mullion" : {
-
-    },
-    "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {
-
-    },
-    "Mullion: Accessibility access needed" : {
-
-    },
-    "Open System Settings" : {
-
-    },
-    "Quit Mullion" : {
-
-    },
-    "Settings…" : {
-
-    },
-    "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {
-
-    },
-    "Waiting for access…" : {
-
-    },
-    "Welcome to Mullion" : {
-
-    }
+    "Allow Mullion to arrange your windows" : {},
+    "Almost Maximize" : {},
+    "Bottom Center Sixth" : {},
+    "Bottom Half" : {},
+    "Bottom Left" : {},
+    "Bottom Left Sixth" : {},
+    "Bottom Right" : {},
+    "Bottom Right Sixth" : {},
+    "Center" : {},
+    "Center Third" : {},
+    "Displays" : {},
+    "First Third" : {},
+    "First Two-Thirds" : {},
+    "Grant Accessibility access…" : {},
+    "Grant Access…" : {},
+    "Grow" : {},
+    "Halves" : {},
+    "Last Third" : {},
+    "Last Two-Thirds" : {},
+    "Left Half" : {},
+    "Maximize" : {},
+    "Maximize Height" : {},
+    "Move to Next Display" : {},
+    "Move to Previous Display" : {},
+    "Mullion" : {},
+    "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
+    "Mullion: Accessibility access needed" : {},
+    "Open System Settings" : {},
+    "Other" : {},
+    "Quarters" : {},
+    "Quit Mullion" : {},
+    "Restore" : {},
+    "Right Half" : {},
+    "Settings…" : {},
+    "Shrink" : {},
+    "Sixths" : {},
+    "Thirds" : {},
+    "Top Center Sixth" : {},
+    "Top Half" : {},
+    "Top Left" : {},
+    "Top Left Sixth" : {},
+    "Top Right" : {},
+    "Top Right Sixth" : {},
+    "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
+    "Waiting for access…" : {},
+    "Welcome to Mullion" : {}
   },
   "version" : "1.0"
 }
