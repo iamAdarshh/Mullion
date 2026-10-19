@@ -61,8 +61,8 @@ make clean
 
 ## 5. Granting Accessibility to the debug build
 1. `make run`. The onboarding window appears.
-2. Click **Open System Settings** and toggle **Mullion Debug** on under *Privacy & Security → Accessibility*.
-3. The app detects the grant within about 1 s.
+2. Click **Grant Access…**. macOS shows an alert; click **Open System Settings** in it and toggle **Mullion Debug** on under *Privacy & Security → Accessibility*. (If you dismissed the alert, the welcome window's button now reads **Open System Settings** and takes you straight there.)
+3. The app detects the grant within about 1 s and closes the welcome window.
 
 ## Troubleshooting
 **Accessibility is on, but nothing moves after a rebuild.** macOS ties the grant to the code signature. Ad-hoc builds change signature on every build. Fix it permanently by signing debug builds with a stable certificate:
