@@ -16,7 +16,7 @@ later ─ M9 Window thumbnail (exploratory)
 Goal: an empty but correct app skeleton that every later milestone builds on.
 - [x] `project.yml` (XcodeGen) defining the `Mullion` app target, the `MullionCore` local Swift package, and test targets
 - [x] `Makefile` targets: `bootstrap`, `build`, `test`, `test-core`, `test-app`, `run`, `lint`, `format`, `clean`
-- [ ] The app runs as a menu bar agent (`LSUIElement = YES`) with a placeholder menu: *Settings…*, *Quit*
+- [x] The app runs as a menu bar agent (`LSUIElement = YES`) with a placeholder menu: *Settings…*, *Quit*
 - [ ] Accessibility onboarding flow (PRD §6.9)
 - [x] `os.Logger` categories set up (`ax`, `hotkey`, `drag`, `layout`, `settings`)
 - [ ] CI is green: lint, `swift test` for MullionCore, and `xcodebuild build` for the app
