@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a new action, layout, or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How do other tools do it?
+      description: e.g. Magnet, Rectangle, PowerToys FancyZones…
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: I understand Mullion uses only public macOS APIs, so some features (always-on-top, Spaces control) aren't possible.
+          required: true

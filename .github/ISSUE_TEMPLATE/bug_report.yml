@@ -1,0 +1,41 @@
+name: Bug report
+description: Something doesn't snap, move or behave as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Affected app(s)
+      placeholder: e.g. Slack 4.41, Safari 19
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. 15.6 (run `sw_vers`)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Mullion version
+      placeholder: Menu → About
+    validations:
+      required: true
+  - type: textarea
+    id: displays
+    attributes:
+      label: Display setup
+      description: Number of displays, arrangement (e.g. external above laptop), any portrait/ultrawide, Dock position, Stage Manager on/off.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: "Run `log stream --predicate 'subsystem BEGINSWITH \"io.github.iamadarshh.mullion\"' --level debug`, reproduce, and paste."
+      render: text

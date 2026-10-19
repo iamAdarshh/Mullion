@@ -1,0 +1,158 @@
+# Mullion: Product Requirements
+
+| | |
+|---|---|
+| **Owner** | Adarsh Choudhary (@iamAdarshh) |
+| **Status** | Draft v0.1 (planning) |
+| **Last updated** | 2026-10-19 |
+
+## 1. Problem
+macOS window management is still mostly manual. Since Sequoia, macOS can tile to halves and quarters, but it has no thirds or sixths, no custom layouts, no saved workspaces, and only limited multi-monitor control. Magnet covers the basics but has no custom zones or saved layouts. PowerToys solves this on Windows (FancyZones, Workspaces, Grab And Move), but nothing comparable on the Mac is both free and open source.
+
+## 2. Goals
+1. Match Magnet's snapping feature set, with a free and open-source licence (v1).
+2. Add the PowerToys window features that Magnet lacks: zones, grab & move, app memory, and workspaces (v2).
+3. Feel native. The app should be fast (snap in under 50 ms), use little memory (under 40 MB at idle), produce no visible flicker, and behave correctly on multiple displays.
+4. Be trustworthy: use only public APIs, make no network calls, and keep the codebase readable for contributors.
+
+## 3. Non-goals
+| Not doing | Why |
+|---|---|
+| Always-on-top for other apps' windows | No public API exists. It would need private SkyLight APIs or disabling SIP (see [ADR-0003](adr/0003-public-apis-only.md)). |
+| Automatic tiling (BSP, dwindle) | This is a different product category; AeroSpace and yabai already cover it. |
+| Moving windows between Spaces | No public API exists. |
+| Mac App Store distribution | Sandboxing conflicts with Accessibility control of other apps (see [ADR-0002](adr/0002-distribution-outside-app-store.md)). |
+| Non-window PowerToys utilities (color picker, rename, …) | Out of scope. Mullion is a window manager. |
+
+## 4. Users
+- **Switcher:** came from Windows and expects Win+Arrow-style snapping and drag-to-edge.
+- **Multi-monitor developer:** uses a laptop with one or two external monitors (one possibly vertical) and wants repeatable layouts.
+- **Ultrawide user:** wants thirds, sixths and custom zones instead of just halves.
+
+## 5. Concepts and terms
+- **Action:** a named window operation, for example `leftHalf` or `nextDisplay`. Every shortcut, menu item and drag target maps to exactly one action.
+- **Target rect:** the frame an action produces, computed from the screen's *visible frame* (which excludes the menu bar and Dock) and the gap setting.
+- **Snap area:** a hot region along a screen edge or corner that triggers an action while the user is dragging.
+- **Zone / layout:** (v2) a user-defined set of rectangles, normalised to 0…1 of the visible frame.
+- **Workspace:** (v2) a saved set of apps and their window frames, grouped by display.
+
+---
+
+## 6. v1 requirements
+
+### 6.1 Window actions
+All target rects are computed against the **visible frame** of the screen that contains most of the window, then inset by the **gap** setting (default 0 pt, range 0–40).
+
+| Action ID | Name | Geometry (fraction of visible frame) |
+|---|---|---|
+| `leftHalf` / `rightHalf` | Left / Right Half | w ½, full height |
+| `topHalf` / `bottomHalf` | Top / Bottom Half | full width, h ½ |
+| `topLeft` `topRight` `bottomLeft` `bottomRight` | Quarters | w ½ × h ½ |
+| `firstThird` `centerThird` `lastThird` | Thirds | w ⅓ (h ⅓ on portrait screens) |
+| `firstTwoThirds` `lastTwoThirds` | Two-thirds | w ⅔ (h ⅔ on portrait) |
+| `topLeftSixth` … `bottomRightSixth` (6) | Sixths | w ⅓ × h ½ (w ½ × h ⅓ on portrait) |
+| `maximize` | Maximize | full visible frame |
+| `almostMaximize` | Almost Maximize | 90 % of the visible frame, centred (percentage configurable) |
+| `maximizeHeight` | Maximize Height | keep x and width, full height |
+| `center` | Center | keep size, centre it (clamped to the visible frame) |
+| `restore` | Restore | the frame from before Mullion first moved this window |
+| `nextDisplay` / `previousDisplay` | Move to Next / Previous Display | keep the window's relative position and size proportionally, clamped |
+| `larger` / `smaller` | Grow / Shrink | ±30 pt on each side (step configurable), clamped |
+
+"First" and "last" mean left and right on landscape screens, top and bottom on portrait screens (where height > width).
+
+**Acceptance criteria**
+- AC-1: Each action produces the expected rect to within 1 pt on 1×, 2× and mixed-scale display setups (unit-tested in `MullionCore`).
+- AC-2: If an app enforces a minimum size larger than the target, the window is placed at the target's origin and stays inside the visible frame. It must not end up on another display.
+- AC-3: Native full-screen windows, the desktop, and system UI (Dock, menu bar extras) are ignored silently.
+- AC-4: Actions on a window with no focus (for example, Finder with no windows open) do nothing and play no error sound.
+
+### 6.2 Cycling (repeat to cycle)
+If the user triggers the same half action twice in a row on the same window, and the window already matches that action's current size, the size steps through **½ → ⅔ → ⅓ → ½**. The setting is *Repeated shortcuts: Cycle sizes / Do nothing / Move to next display* (default: Cycle sizes).
+
+### 6.3 Restore
+- Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes.
+- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position restores its original *size* under the cursor (the same behaviour as Magnet and Windows).
+
+### 6.4 Drag to snap
+- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect. Releasing the mouse applies the action; moving out of the area hides the preview.
+- Default snap areas:
+
+| Area | Action |
+|---|---|
+| Left / right edge | Left / Right Half |
+| Any corner | The matching quarter |
+| Top edge | Maximize |
+| Bottom edge, left / middle / right thirds | First / Center / Last Third |
+| Bottom edge, sliding from one third into a neighbouring third | First / Last Two-thirds |
+| Ultrawide displays (aspect ratio ≥ 21:9), top edge split into thirds | Top sixths (top centre remains Maximize) |
+
+- The area thickness is 5 pt for edges and 20 pt for corners (both configurable).
+- Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
+- Holding **⌥ while dragging** temporarily disables snapping.
+- Apps on the ignore list never snap.
+- AC-5: The preview appears within 1 frame (under 16 ms) of entering an area and never flickers when hovering on the boundary between two areas (use hysteresis).
+- AC-6: Snapping works on every connected display, including a display placed above or below the main display.
+
+### 6.5 Multi-display
+- `nextDisplay` and `previousDisplay` order displays by their x position, then y (left to right, top to bottom).
+- If the window was snapped, it keeps the same *action* on the new display. For example, a left-half window becomes the left half of the next display. Otherwise its frame is scaled proportionally.
+- Up to 6 displays are supported and tested. More may work.
+
+### 6.6 macOS tiling conflict (Sequoia 15+)
+- On launch, and when Settings opens, Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag` and `EnableTopTilingByEdgeDrag`.
+- If either is enabled and drag-to-snap is on, Mullion shows a one-time notice with **Open Desktop & Dock settings** and **Don't show again** buttons. Mullion never writes these preferences itself.
+
+### 6.7 Menu bar
+- A template icon (monochrome, shaped like a mullion window glyph).
+- The menu lists every action grouped by type (Halves, Quarters, Thirds, Sixths, Other, Displays), each with its shortcut shown on the right. It also has **Ignore [frontmost app]**, **Settings…**, **About**, and **Quit**.
+- The menu bar icon can be hidden. If it is, launching the app a second time opens Settings.
+
+### 6.8 Settings window (SwiftUI)
+| Tab | Contents |
+|---|---|
+| General | Launch at login, show menu bar icon, repeated-shortcut behaviour, gap size, almost-maximize %, restore-on-drag-away |
+| Shortcuts | A recorder for every action, *Restore defaults*, conflict warnings |
+| Drag | Drag-to-snap on/off, the ⌥ modifier to disable snapping, area thickness, preview colour and opacity, haptic feedback (Force Touch trackpads) |
+| Ignored Apps | Add or remove apps by bundle ID, with a picker for running apps |
+| Advanced | Export and import the config as JSON, reset everything, verbose logging, open the logs folder |
+| About | Version, licence, GitHub link, acknowledgements |
+
+### 6.9 Onboarding and permissions
+1. On first launch, a welcome window explains *why* Accessibility access is needed, and its button calls `AXIsProcessTrustedWithOptions` with the prompt option.
+2. Mullion polls for trust once per second while the welcome window is open, and continues automatically once access is granted.
+3. If trust is revoked while running, the menu bar icon shows a warning badge, all actions are disabled, and the menu shows *Grant Accessibility access…*.
+
+### 6.10 Non-functional requirements
+| ID | Requirement |
+|---|---|
+| NFR-1 | Under 50 ms from key press to window placed (p95, measured using a signpost) |
+| NFR-2 | Idle CPU about 0 % and under 40 MB RSS at idle |
+| NFR-3 | No network access in v1. The app is built with Hardened Runtime. |
+| NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion (the preview fades instead of animating). |
+| NFR-5 | Localisable from day one (String Catalog). Ships with English, and German as a stretch goal. |
+| NFR-6 | Crash-free: no force-unwraps on AX results, and every AX call handles errors |
+
+---
+
+## 7. v2 requirements (overview)
+Each v2 feature gets its own spec in [docs/features/](features/) before implementation starts.
+
+| Feature | Spec | Summary |
+|---|---|---|
+| Zones | [features/zones.md](features/zones.md) | Custom layouts, an editor, ⇧-drag to zone, spanning, one layout per display, hotkey switching |
+| Grab & Move | [features/grab-and-move.md](features/grab-and-move.md) | Modifier + drag anywhere to move, modifier + right-drag to resize |
+| App memory | [features/app-memory.md](features/app-memory.md) | Opt-in: put an app's new window into its last zone |
+| Workspaces | [features/workspaces.md](features/workspaces.md) | Capture, edit and launch sets of apps and positions |
+| Window thumbnail | [features/window-thumbnail.md](features/window-thumbnail.md) | *Exploratory.* A live, view-only mini copy of a window (ScreenCaptureKit) |
+
+## 8. Success metrics (for a public OSS project)
+- v1.0 tagged, with a signed and notarized build or a clearly documented unsigned build
+- Zero P0 bugs open for more than 7 days
+- The README has a GIF demo, and setup from a fresh clone takes under 10 minutes
+- At least 5 external contributors or 100 GitHub stars within 6 months of v1.0 (aspirational)
+
+## 9. Open questions
+1. Should almost-maximize and gaps apply to drag snapping as well as shortcuts? (Proposed: yes, one geometry engine for everything.)
+2. Distribution: notarized DMG (needs the paid Apple Developer Program) or unsigned plus a Homebrew cask? Decide before M3.
+3. Should Zones replace the v1 snap areas when enabled, or sit alongside them (⇧ for zones, plain drag for snap areas)? Proposed: alongside. See zones.md.

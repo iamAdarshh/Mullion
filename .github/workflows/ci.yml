@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docs-only phase?
+        id: phase
+        run: |
+          if [ -f project.yml ]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Install tools
+        if: steps.phase.outputs.code == 'true'
+        run: brew install xcodegen swiftlint swiftformat
+
+      - name: Show Xcode version
+        if: steps.phase.outputs.code == 'true'
+        run: xcodebuild -version
+
+      - name: Lint
+        if: steps.phase.outputs.code == 'true'
+        run: make lint
+
+      - name: Core tests
+        if: steps.phase.outputs.code == 'true'
+        run: make test-core
+
+      - name: Generate project
+        if: steps.phase.outputs.code == 'true'
+        run: make bootstrap
+
+      - name: Build and test app
+        if: steps.phase.outputs.code == 'true'
+        run: make test-app
+
+      - name: Docs-only notice
+        if: steps.phase.outputs.code == 'false'
+        run: echo "No project.yml yet (pre-M0) – skipping build. Docs only."

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(make bootstrap)",
+      "Bash(make build)",
+      "Bash(make test)",
+      "Bash(make test-core)",
+      "Bash(make test-app)",
+      "Bash(make lint)",
+      "Bash(make format)",
+      "Bash(make clean)",
+      "Bash(swift build *)",
+      "Bash(swift test *)",
+      "Bash(swift package *)",
+      "Bash(xcodegen *)",
+      "Bash(xcodebuild *)",
+      "Bash(swiftlint *)",
+      "Bash(swiftformat *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git switch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue list *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr diff *)",
+      "Bash(sw_vers *)",
+      "Bash(log show *)",
+      "WebFetch(domain:developer.apple.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:swiftpackageindex.com)"
+    ],
+    "ask": [
+      "Bash(make run)",
+      "Bash(git push *)",
+      "Bash(gh pr create *)",
+      "Bash(gh release *)",
+      "Bash(git tag *)",
+      "Bash(codesign *)",
+      "Bash(xcrun notarytool *)"
+    ],
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(rm -rf *)",
+      "Bash(defaults write *)",
+      "Bash(defaults delete *)",
+      "Bash(tccutil *)",
+      "Bash(csrutil *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Read(./.env)",
+      "Read(./Config/Local.xcconfig)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-swift.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

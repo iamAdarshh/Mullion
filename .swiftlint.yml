@@ -1,0 +1,54 @@
+included:
+  - App/Sources
+  - App/Tests
+  - Packages/MullionCore/Sources
+  - Packages/MullionCore/Tests
+
+excluded:
+  - .build
+  - DerivedData
+  - build
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - empty_count
+  - first_where
+  - sorted_first_last
+  - contains_over_first_not_nil
+  - private_over_fileprivate
+  - redundant_type_annotation
+  - fatal_error_message
+  - unowned_variable_capture
+
+disabled_rules:
+  - trailing_comma        # SwiftFormat owns formatting
+
+# force_cast stays ON. The only allowed exception is a CF downcast right after a
+# CFGetTypeID check inside App/Sources/Accessibility, marked with
+# `// swiftlint:disable:next force_cast` (see the macos-window-apis skill).
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+
+identifier_name:
+  excluded: [x, y, w, h, id, ax, i, j]
+
+custom_rules:
+  no_print:
+    name: "No print"
+    regex: '^\s*print\('
+    message: "Use os.Logger instead of print()"
+    severity: error
+  no_private_ax:
+    name: "No private APIs"
+    regex: '(_AXUIElementGetWindow|CGS[A-Z]\w+\(|SLS[A-Z]\w+\(|dlsym\(|@_silgen_name)'
+    message: "Private APIs are forbidden (ADR-0003)"
+    severity: error
+  no_nsscreen_main_for_flip:
+    name: "NSScreen.main is not the primary screen"
+    regex: 'NSScreen\.main\b'
+    message: "Use NSScreen.screens.first for coordinate conversion (see ARCHITECTURE §4). Disable inline if you really mean the key window's screen."
+    severity: warning
