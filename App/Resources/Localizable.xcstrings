@@ -1,0 +1,39 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Allow Mullion to arrange your windows" : {
+
+    },
+    "Grant Accessibility access…" : {
+
+    },
+    "Mullion" : {
+
+    },
+    "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {
+
+    },
+    "Mullion: Accessibility access needed" : {
+
+    },
+    "Open System Settings" : {
+
+    },
+    "Quit Mullion" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {
+
+    },
+    "Waiting for access…" : {
+
+    },
+    "Welcome to Mullion" : {
+
+    }
+  },
+  "version" : "1.0"
+}
