@@ -29,8 +29,9 @@ Versioning follows [SemVer](https://semver.org). The tag format is `vMAJOR.MINOR
 ### Install
 Download `Mullion-X.Y.Z.dmg`, drag Mullion to Applications, open it and grant Accessibility access.
 <!-- unsigned builds only -->
-> This build is not notarized. On first launch, right-click Mullion.app → Open, or run
-> `xattr -dr com.apple.quarantine /Applications/Mullion.app`.
+> This build is not notarized, so macOS blocks it on first launch. Open it once, then go to
+> System Settings → Privacy & Security and click **Open Anyway** (macOS 15 and later no longer
+> offer right-click → Open for this). Or run `xattr -dr com.apple.quarantine /Applications/Mullion.app`.
 
 SHA-256: `…`
 ```
