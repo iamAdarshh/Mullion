@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.0-beta.1] - 2026-10-19
+
 ### Added
 - Project starter kit: product spec, architecture, roadmap, ADRs, feature specs, and the Claude Code setup.
 - Mullion runs as a menu bar app with a placeholder menu (*Settings…*, *Quit Mullion*).
