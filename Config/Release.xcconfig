@@ -1,0 +1,15 @@
+#include "Base.xcconfig"
+
+APP_BUNDLE_ID = io.github.iamadarshh.mullion
+APP_PRODUCT_NAME = Mullion
+APP_DISPLAY_NAME = Mullion
+
+// NFR-3
+ENABLE_HARDENED_RUNTIME = YES
+
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+
+// Last, so a developer's local values win.
+#include? "Local.xcconfig"

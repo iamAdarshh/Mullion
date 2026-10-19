@@ -1,0 +1,27 @@
+// Shared build settings for every configuration. Debug.xcconfig and Release.xcconfig include this file.
+// Target identity (bundle ID, product name) is wired up in project.yml from the APP_* variables below.
+
+MACOSX_DEPLOYMENT_TARGET = 14.0
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+
+// Versioning
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+// Signing. Ad-hoc ("Sign to Run Locally") by default, so a fresh clone builds with no Apple ID.
+// Ad-hoc signatures change on every build, which makes macOS drop the Accessibility grant.
+// For a stable signature, copy Local.xcconfig.example to Local.xcconfig (see docs/SETUP.md#troubleshooting).
+CODE_SIGN_STYLE = Automatic
+MULLION_CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+// No App Sandbox: the Accessibility API does not work inside it.
+// Hardened Runtime (NFR-3) is on in Release.xcconfig only: in Debug its library validation can
+// stop the ad-hoc-signed app from loading the hosted test bundle.
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+DEAD_CODE_STRIPPING = YES
+
+// String Catalog (NFR-5)
+LOCALIZATION_PREFERS_STRING_CATALOGS = YES
+SWIFT_EMIT_LOC_STRINGS = YES
