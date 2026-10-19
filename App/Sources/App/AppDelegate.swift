@@ -36,7 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 accessibility?.refresh()
                 return accessibility?.isTrusted ?? false
             },
-            frontmostPID: { Self.frontmostOtherAppPID() }
+            frontmostPID: { Self.frontmostOtherAppPID() },
+            isProcessRunning: { NSRunningApplication(processIdentifier: $0) != nil }
         )
         let menuBar = MenuBarController(isTrusted: accessibility.isTrusted)
         let hotkeys = HotkeyService { [weak dispatcher] action in

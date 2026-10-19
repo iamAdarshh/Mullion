@@ -73,7 +73,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - Only the four half actions repeat this way.
 
 ### 6.3 Restore
-- Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected after each action, when its element reports it is gone) or after a successful restore. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
+- Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
 - `restore` brings back that frame. Manually dragging a snapped window away from its snapped position restores its original *size* under the cursor (the same behaviour as Magnet and Windows).
 
 ### 6.4 Drag to snap

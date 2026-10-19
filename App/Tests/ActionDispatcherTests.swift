@@ -15,6 +15,7 @@ struct ActionDispatcherTests {
         var isTrusted = true
         var checks = 0
         var frontmostPID: pid_t?
+        var quitPIDs: Set<pid_t> = []
 
         init(frontmostPID: pid_t?) {
             self.frontmostPID = frontmostPID
@@ -43,7 +44,8 @@ struct ActionDispatcherTests {
                     trust.checks += 1
                     return trust.isTrusted
                 },
-                frontmostPID: { trust.frontmostPID }
+                frontmostPID: { trust.frontmostPID },
+                isProcessRunning: { !trust.quitPIDs.contains($0) }
             )
         }
 
@@ -60,6 +62,16 @@ struct ActionDispatcherTests {
             for action in actions {
                 await dispatcher.perform(action).value
             }
+        }
+
+        /// Focuses a window of a different app and makes that app frontmost.
+        func switchToAnotherApp() async -> WindowRef {
+            let pid = ActionDispatcherTests.pid + 1
+            let other = FakeWindowController.makeRef(pid: pid)
+            await windows.add(other, frame: ActionDispatcherTests.floating)
+            await windows.focus(other)
+            trust.frontmostPID = pid
+            return other
         }
 
         var frame: CGRect? {
@@ -176,20 +188,46 @@ struct ActionDispatcherTests {
         #expect(await harness.windows.setFrameCalls.isEmpty)
     }
 
-    @Test func closedWindowsAreForgotten() async {
+    @Test func closedWindowsOfTheSameAppAreForgotten() async {
         let harness = Harness()
         await harness.addFocusedWindow()
         await harness.perform(.leftHalf)
 
-        // The first window closes; then a window of another app is snapped.
-        let other = FakeWindowController.makeRef(pid: Self.pid + 1)
+        // The first window closes; then another window of the same app is snapped.
+        let sibling = FakeWindowController.makeRef(pid: Self.pid, second: true)
         await harness.windows.close(harness.window)
-        await harness.windows.add(other, frame: Self.floating)
-        await harness.windows.focus(other)
-        harness.trust.frontmostPID = Self.pid + 1
+        await harness.windows.add(sibling, frame: Self.floating)
+        await harness.windows.focus(sibling)
+        await harness.perform(.leftHalf)
+
+        #expect(harness.dispatcher.rememberedWindows == [sibling])
+    }
+
+    @Test func windowsOfQuitAppsAreForgottenWithoutAXCalls() async {
+        let harness = Harness()
+        await harness.addFocusedWindow()
+        await harness.perform(.leftHalf)
+
+        let other = await harness.switchToAnotherApp()
+        harness.trust.quitPIDs = [Self.pid]
         await harness.perform(.leftHalf)
 
         #expect(harness.dispatcher.rememberedWindows == [other])
+        #expect(await harness.windows.isAliveCalls.contains(Self.pid) == false)
+    }
+
+    /// Regression: cleanup used to query every remembered window over AX after each action,
+    /// so one frozen app added up to 0.25 s per window to every later hotkey.
+    @Test func windowsOfOtherRunningAppsAreNeverQueried() async {
+        let harness = Harness()
+        await harness.addFocusedWindow()
+        await harness.perform(.leftHalf)
+
+        let other = await harness.switchToAnotherApp()
+        await harness.perform(.leftHalf, .rightHalf)
+
+        #expect(await harness.windows.isAliveCalls.contains(Self.pid) == false)
+        #expect(Set(harness.dispatcher.rememberedWindows) == [harness.window, other])
     }
 
     // MARK: Minimum and fixed sizes (AC-2)

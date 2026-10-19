@@ -14,12 +14,15 @@ actor FakeWindowController: WindowControlling {
     private(set) var windows: [WindowRef: Window] = [:]
     private(set) var setFrameCalls: [CGRect] = []
     private(set) var focusedWindowCalls = 0
+    /// The pid of every window `isAlive` was asked about, in order.
+    private(set) var isAliveCalls: [pid_t] = []
     private var focused: WindowRef?
     private var setFrameError: AXWindowError?
 
     /// A fresh window ref. Creating an application element makes no IPC call, so any pid works.
-    static func makeRef(pid: pid_t) -> WindowRef {
-        WindowRef(element: AXUIElementCreateApplication(pid), pid: pid)
+    /// Pass `second: true` for another window of the same app (it uses a different element).
+    static func makeRef(pid: pid_t, second: Bool = false) -> WindowRef {
+        WindowRef(element: second ? AXUIElementCreateSystemWide() : AXUIElementCreateApplication(pid), pid: pid)
     }
 
     func add(_ window: WindowRef, frame: CGRect, minimumSize: CGSize = .zero, isResizable: Bool = true) {
@@ -72,6 +75,7 @@ actor FakeWindowController: WindowControlling {
     }
 
     func isAlive(_ window: WindowRef) -> Bool {
-        windows[window]?.isAlive ?? false
+        isAliveCalls.append(window.pid)
+        return windows[window]?.isAlive ?? false
     }
 }

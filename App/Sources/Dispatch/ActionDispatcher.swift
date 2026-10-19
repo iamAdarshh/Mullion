@@ -14,6 +14,7 @@ final class ActionDispatcher {
     private let settings: () -> ActionSettings
     private let isTrusted: () -> Bool
     private let frontmostPID: () -> pid_t?
+    private let isProcessRunning: (pid_t) -> Bool
     private let store = RestoreStore()
     private let signposter = OSSignposter(subsystem: Log.subsystem, category: "snap")
     /// The action currently running. Each new action waits for it, so two quick key presses
@@ -23,18 +24,21 @@ final class ActionDispatcher {
     /// - Parameters:
     ///   - isTrusted: Re-checks Accessibility trust. Called before every action (PRD §6.9.3).
     ///   - frontmostPID: The frontmost app's pid, or `nil` when it's Mullion itself or there is none.
+    ///   - isProcessRunning: Whether an app is still running. Cheap, and needs no AX call.
     init(
         windows: any WindowControlling,
         screens: any ScreenProviding,
         settings: @escaping () -> ActionSettings,
         isTrusted: @escaping () -> Bool,
-        frontmostPID: @escaping () -> pid_t?
+        frontmostPID: @escaping () -> pid_t?,
+        isProcessRunning: @escaping (pid_t) -> Bool
     ) {
         self.windows = windows
         self.screens = screens
         self.settings = settings
         self.isTrusted = isTrusted
         self.frontmostPID = frontmostPID
+        self.isProcessRunning = isProcessRunning
     }
 
     /// The windows Mullion currently remembers a restore frame or snap for.
@@ -105,9 +109,17 @@ final class ActionDispatcher {
     }
 
     /// Drops windows that have closed since they were moved (PRD §6.3).
+    ///
+    /// Windows of apps that have quit are dropped without any AX call. Only windows of the app
+    /// just acted on are re-checked over AX: that app has just answered, so the check is fast.
+    /// Other running apps are never queried here, so one frozen app can't slow down every hotkey
+    /// (each AX call to it could take the full messaging timeout). Their closed windows are
+    /// dropped the next time Mullion acts on that app, or when it quits.
     private func forgetClosedWindows(except current: WindowRef) async {
         for window in store.windows where window != current {
-            if await !windows.isAlive(window) {
+            if !isProcessRunning(window.pid) {
+                store.forget(window)
+            } else if window.pid == current.pid, await !windows.isAlive(window) {
                 store.forget(window)
             }
         }
