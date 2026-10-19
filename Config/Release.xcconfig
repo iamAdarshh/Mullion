@@ -11,5 +11,5 @@ SWIFT_OPTIMIZATION_LEVEL = -O
 SWIFT_COMPILATION_MODE = wholemodule
 DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
 
-// Last, so a developer's local values win.
-#include? "Local.xcconfig"
+// No Local.xcconfig here: a developer's local signing identity must never override
+// release signing (Developer ID, decided in M3; see docs/RELEASING.md).

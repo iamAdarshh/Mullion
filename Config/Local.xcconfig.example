@@ -1,4 +1,5 @@
 // Copy to Config/Local.xcconfig (gitignored) to sign debug builds with a stable certificate.
+// Only Debug.xcconfig includes it; Release builds ignore it.
 // A stable signature keeps the Accessibility grant across rebuilds (docs/SETUP.md#troubleshooting).
 //
 // 1. Xcode → Settings → Accounts: add your Apple ID (a free account works).
