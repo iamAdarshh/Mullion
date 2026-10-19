@@ -51,9 +51,7 @@ public enum ActionCalculator {
                     height: size.height
                 )
             case .larger:
-                let grown = window.insetBy(dx: -settings.resizeStep, dy: -settings.resizeStep)
-                let inside = grown.intersection(visible)
-                rect = inside.isNull ? grown.clamped(to: visible) : inside
+                rect = grown(window, by: settings.resizeStep, visible: visible)
             case .smaller:
                 rect = shrunk(window, by: settings.resizeStep, visible: visible)
             default:
@@ -147,6 +145,20 @@ public enum ActionCalculator {
             width: 1 / CGFloat(columns),
             height: 1 / CGFloat(rows)
         )
+    }
+
+    /// Moves each edge out by `step`, stopping at the visible frame. An edge already past the visible
+    /// frame stays put, so Grow never shrinks a window or pulls it off another display. A window
+    /// entirely off the screen is brought back onto it.
+    private static func grown(_ window: CGRect, by step: CGFloat, visible: CGRect) -> CGRect {
+        guard window.intersects(visible) else {
+            return window.insetBy(dx: -step, dy: -step).clamped(to: visible)
+        }
+        let minX = window.minX < visible.minX ? window.minX : max(window.minX - step, visible.minX)
+        let maxX = window.maxX > visible.maxX ? window.maxX : min(window.maxX + step, visible.maxX)
+        let minY = window.minY < visible.minY ? window.minY : max(window.minY - step, visible.minY)
+        let maxY = window.maxY > visible.maxY ? window.maxY : min(window.maxY + step, visible.maxY)
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     /// Removes `step` from each side, but never makes a dimension smaller than

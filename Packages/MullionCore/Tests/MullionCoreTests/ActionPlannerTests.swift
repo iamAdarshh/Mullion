@@ -155,6 +155,26 @@ struct ActionPlannerTests {
         #expect(result?.record == nil)
     }
 
+    /// A window that sits across the laptop / external boundary (470 pt on the laptop, 330 on the external).
+    private static let acrossDisplays = CGRect(x: 1000, y: 200, width: 800, height: 400)
+
+    /// Regression: Restore used to clamp a frame that spanned two displays into one of them.
+    @Test func restorePutsBackAFrameThatSpannedTwoDisplays() {
+        let result = plan(.restore, window: Self.leftHalf, screens: Self.twoScreens, restoreFrame: Self.acrossDisplays)
+        #expect(result?.target == Self.acrossDisplays)
+    }
+
+    @Test func restorePutsBackAFramePartlyOffScreen() {
+        let partlyOff = CGRect(x: 1200, y: 200, width: 600, height: 400)
+        #expect(plan(.restore, window: Self.leftHalf, restoreFrame: partlyOff)?.target == partlyOff)
+    }
+
+    /// Regression: Grow used to crop a window spanning two displays and could move it to the other one.
+    @Test func growKeepsAWindowThatSpansTwoDisplaysWhereItIs() {
+        let result = plan(.larger, window: Self.acrossDisplays, screens: Self.twoScreens)
+        #expect(result?.target == CGRect(x: 970, y: 170, width: 830, height: 460))
+    }
+
     @Test func restoreToADisconnectedDisplayLandsOnAConnectedOne() {
         let saved = CGRect(x: 3000, y: 100, width: 500, height: 400)
         let result = plan(.restore, window: Self.leftHalf, restoreFrame: saved)

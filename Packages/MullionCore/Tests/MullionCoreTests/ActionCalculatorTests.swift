@@ -163,6 +163,29 @@ struct ActionCalculatorTests {
         ))
     }
 
+    /// Regression: Grow used to crop the part of the window outside the visible frame.
+    @Test func largerNeverShrinksAWindowPartlyPastTheScreenEdge() {
+        let pastRightEdge = CGRect(x: 1200, y: 200, width: 600, height: 400)
+        #expect(target(.larger, on: Screens.macBookAir13, window: pastRightEdge) == CGRect(
+            x: 1170, y: 170, width: 630, height: 460
+        ))
+    }
+
+    @Test(arguments: Screens.all)
+    func largerAlwaysContainsTheOriginalWindow(screen: ScreenGeometry) {
+        let visible = screen.visibleFrame
+        let windows = [
+            CGRect(x: visible.midX, y: visible.midY, width: 400, height: 300),
+            CGRect(x: visible.maxX - 100, y: visible.minY + 50, width: 400, height: 300),
+            CGRect(x: visible.minX - 200, y: visible.maxY - 100, width: 400, height: 300),
+            CGRect(x: visible.midX, y: visible.minY - 50, width: 400, height: 300),
+        ]
+        for window in windows {
+            let grown = target(.larger, on: screen, window: window)
+            #expect(grown.map { $0.contains(window) } == true, "\(window)")
+        }
+    }
+
     @Test func smallerStopsAtAQuarterOfTheScreen() {
         // 400 - 60 < 25 % of 1470 and 250 - 60 < 25 % of 919, so neither dimension shrinks.
         let small = CGRect(x: 100, y: 200, width: 400, height: 250)

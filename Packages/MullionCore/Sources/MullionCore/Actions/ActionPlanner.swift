@@ -46,9 +46,11 @@ public enum ActionPlanner {
     // MARK: Private
 
     private static func restore(_ frame: CGRect, screens: [ScreenGeometry], fallback: ScreenGeometry) -> ActionPlan {
-        // The saved frame's display may have been disconnected since.
         let screen = ScreenLocator.screen(containing: frame, in: screens) ?? fallback
-        let target = screen.visibleFrame.contains(frame) ? frame : frame.clamped(to: screen.visibleFrame)
+        // Put the frame back exactly, even across two displays or partly off screen. Only when its
+        // display has been disconnected (it overlaps no screen) is it moved onto a connected one.
+        let isOnAScreen = screens.contains { $0.frame.intersects(frame) }
+        let target = isOnAScreen ? frame : frame.clamped(to: screen.visibleFrame)
         return ActionPlan(target: target, screen: screen, record: nil)
     }
 
