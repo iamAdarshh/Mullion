@@ -31,12 +31,14 @@ struct CGRectGeometryTests {
         #expect(tooWide.movedInside(bounds) == CGRect(x: 0, y: 100, width: 1600, height: 300))
     }
 
-    @Test(arguments: [
+    private static let approximateEqualityCases: [(CGRect, Bool)] = [
         (CGRect(x: 0, y: 0, width: 100, height: 100), true),
         (CGRect(x: 1.9, y: -1.9, width: 101.9, height: 98.1), true),
         (CGRect(x: 2.1, y: 0, width: 100, height: 100), false),
         (CGRect(x: 0, y: 0, width: 100, height: 97.5), false),
-    ])
+    ]
+
+    @Test(arguments: approximateEqualityCases)
     func approximateEquality(rect: CGRect, isEqual: Bool) {
         #expect(rect.isApproximatelyEqual(to: CGRect(x: 0, y: 0, width: 100, height: 100), tolerance: 2) == isEqual)
     }
