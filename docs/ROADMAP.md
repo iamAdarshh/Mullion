@@ -26,7 +26,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 **Exit criteria:** a fresh clone followed by `make bootstrap run` shows the menu bar icon and the permission prompt, and CI passes.
 
 ## M1: Keyboard snapping
-- [ ] `MullionCore/Geometry`: coordinate conversion (AppKit ↔ AX), visible frame, gaps, and every action in PRD §6.1, with 100 % unit-test coverage of the action math
+- [x] `MullionCore/Geometry`: coordinate conversion (AppKit ↔ AX), visible frame, gaps, and every action in PRD §6.1, with 100 % unit-test coverage of the action math
 - [ ] `AXWindow` wrapper: get/set frame, focused window, minimum size handling, enhanced-UI workaround
 - [ ] Global hotkeys via the `KeyboardShortcuts` package, using the defaults from SHORTCUTS.md
 - [ ] Repeat-to-cycle (PRD §6.2)

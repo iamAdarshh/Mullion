@@ -119,13 +119,13 @@ public enum ActionCalculator {
         .bottomRightSixth: 5,
     ]
 
-    private static func half(_ action: WindowAction, fraction: CGFloat) -> UnitRect? {
+    /// Only called for the halves group, so anything that isn't left, right or top is the bottom half.
+    private static func half(_ action: WindowAction, fraction: CGFloat) -> UnitRect {
         switch action {
         case .leftHalf: UnitRect(x: 0, y: 0, width: fraction, height: 1)
         case .rightHalf: UnitRect(x: 1 - fraction, y: 0, width: fraction, height: 1)
         case .topHalf: UnitRect(x: 0, y: 0, width: 1, height: fraction)
-        case .bottomHalf: UnitRect(x: 0, y: 1 - fraction, width: 1, height: fraction)
-        default: nil
+        default: UnitRect(x: 0, y: 1 - fraction, width: 1, height: fraction)
         }
     }
 
