@@ -6,6 +6,14 @@ struct OnboardingView: View {
 
     @State private var hasRequested = false
 
+    /// The first click shows the macOS alert; later clicks open System Settings directly
+    /// (see `PermissionMonitor.requestTrust()`), so the label says what happens next.
+    /// Typed as `LocalizedStringKey` because a ternary of plain literals would infer `String`
+    /// and skip the String Catalog.
+    private var buttonTitle: LocalizedStringKey {
+        hasRequested ? "Open System Settings" : "Grant Access…"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
@@ -38,7 +46,7 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Open System Settings") {
+                Button(buttonTitle) {
                     hasRequested = true
                     onRequestAccess()
                 }
