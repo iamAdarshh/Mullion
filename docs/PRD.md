@@ -77,7 +77,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding ⌥ or an ignored app leaves it alone. On by default (Settings → General, M3).
 
 ### 6.4 Drag to snap
-- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect. Releasing the mouse applies the action; moving out of the area hides the preview.
+- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect, in the accent colour and with gaps applied, exactly as the shortcut would place it. Releasing the mouse applies the action on the display the preview was on; moving out of the area hides the preview.
 - Default snap areas:
 
 | Area | Action |
@@ -95,6 +95,10 @@ If the user triggers the same half action twice in a row on the same window, and
 - Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
 - Holding **⌥ while dragging** temporarily disables snapping.
 - Windows of apps on the ignore list never snap when dragged. Keyboard shortcuts and menu actions still work on them, because those are a deliberate request for the frontmost window. The menu's **Ignore [frontmost app]** item adds the app to the list, and choosing it again (it shows a checkmark) takes it off.
+- Known limitations (v1):
+  - Dialogs and floating panels show a preview but don't snap at the drop: Mullion only moves standard windows, and during the drag it can't tell them apart.
+  - A tab torn off into a new window (Safari, Chrome) doesn't snap: the window being dragged is new, and the window that was clicked never moves.
+  - While Mullion itself is the active app (its welcome window is in front), pressing or releasing ⌥ only takes effect on the next mouse movement.
 - AC-5: The preview appears within 1 frame (under 16 ms) of entering an area and never flickers when hovering on the boundary between two areas (use hysteresis).
 - AC-6: Snapping works on every connected display, including a display placed above or below the main display.
 
@@ -134,7 +138,7 @@ If the user triggers the same half action twice in a row on the same window, and
 | NFR-1 | Under 50 ms from key press to window placed (p95, measured using a signpost) |
 | NFR-2 | Idle CPU about 0 % and under 40 MB RSS at idle |
 | NFR-3 | No network access in v1. The app is built with Hardened Runtime. |
-| NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion (the preview fades instead of animating). |
+| NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion: the drag preview still fades in and out, but jumps between snap areas instead of sliding. |
 | NFR-5 | Localisable from day one (String Catalog). Ships with English, and German as a stretch goal. |
 | NFR-6 | Crash-free: no force-unwraps on AX results, and every AX call handles errors |
 

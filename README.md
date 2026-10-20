@@ -50,7 +50,7 @@ make run         # builds and launches the app
 On first launch, Mullion asks for the Accessibility permission (*System Settings → Privacy & Security → Accessibility*).
 
 ### Using macOS Sequoia or later?
-macOS 15+ has built-in window tiling. When you drag a window to a screen edge, both Mullion and macOS respond. Mullion detects this and offers to open *System Settings → Desktop & Dock → Windows*, where you can turn off **Drag windows to screen edges to tile**. Mullion never changes your system settings itself.
+macOS 15+ has built-in window tiling. When you drag a window to a screen edge, both Mullion and macOS respond. Mullion detects this and offers to open *System Settings → Desktop & Dock → Windows*, where you can turn off **Drag windows to screen edges to tile** and **Drag windows to menu bar to fill screen**. If **Hold ⌥ key while dragging windows to tile** is on, holding ⌥ tiles the window with macOS instead of turning Mullion's snapping off, so Mullion mentions that too. Mullion never changes your system settings itself.
 
 ## Privacy
 Mullion runs fully offline. It reads window positions and titles only to arrange windows, and it stores your settings locally in `~/Library/Application Support/Mullion/` and `UserDefaults`. See [SECURITY.md](SECURITY.md).
