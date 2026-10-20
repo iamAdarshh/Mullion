@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Drag to snap (in progress): while you drag a window by its title bar into a screen edge, corner, bottom third or, on ultrawide displays, a top sixth, a translucent preview in your accent colour shows where it will snap, gaps included. The preview slides between areas, or fades with Reduce motion on. Dropping doesn't move the window yet.
+
 ## [0.1.0-beta.1] - 2026-10-19
 
 ### Added

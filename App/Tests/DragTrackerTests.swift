@@ -18,16 +18,23 @@ struct DragTrackerTests {
         var moved: [CGPoint] = []
         var ended: [CGPoint] = []
         var cancelled = 0
+        var isButtonDown = true
     }
 
     @MainActor
     private struct Harness {
         let windows = FakeWindowList()
+        let scheduler = FakeScheduler()
         let tracker: DragTracker
         let recorder = Recorder()
 
         init() {
-            tracker = DragTracker(windowList: windows, ownPID: DragTrackerTests.ownPID)
+            tracker = DragTracker(
+                windowList: windows,
+                ownPID: DragTrackerTests.ownPID,
+                scheduler: scheduler,
+                isLeftButtonDown: { [recorder] in recorder.isButtonDown }
+            )
             tracker.onMoveStarted = { [recorder] window, point in
                 recorder.started.append(point)
                 recorder.startedWindows.append(window)
@@ -115,7 +122,8 @@ struct DragTrackerTests {
         harness.tracker.mouseDown(at: Self.press)
         harness.drag(by: 5)
         harness.drag(by: 10)
-        #expect(harness.windows.reads == 1)
+        // Under the cursor, then at the press point; nothing after that.
+        #expect(harness.windows.reads == 2)
         #expect(harness.recorder.started.isEmpty)
     }
 
@@ -162,14 +170,83 @@ struct DragTrackerTests {
         #expect(harness.recorder.cancelled == 0)
     }
 
-    @Test func aPressDuringAWindowDragCancelsIt() {
+    @Test func aPressDuringAWindowDragCancelsItAndStartsAfresh() {
         let harness = Harness()
         harness.addWindow()
         harness.startWindowDrag()
         #expect(harness.tracker.isDraggingWindow)
         // The release was missed: the next press must not leave the old drag running.
-        harness.tracker.mouseDown(at: Self.press)
+        harness.windows.userChange(Self.windowID, to: Self.frame)
+        harness.startWindowDrag()
         #expect(harness.recorder.cancelled == 1)
+        #expect(harness.recorder.started.count == 2)
+    }
+
+    // Regression: the window server moves the window before Mullion handles the event, so the event's
+    // position lags. Looking the window up there missed a window dragged fast from near its edge.
+    @Test func aWindowAheadOfTheEventIsStillFound() {
+        let harness = Harness()
+        harness.addWindow()
+        let press = CGPoint(x: 300, y: Self.frame.minY + 3)
+        harness.tracker.mouseDown(at: press)
+        // The event says 12 pt, but the window and the cursor are already 40 pt down.
+        harness.windows.userChange(Self.windowID, to: Self.frame.offsetBy(dx: 0, dy: 40))
+        harness.windows.cursorPosition = CGPoint(x: 300, y: press.y + 40)
+        harness.tracker.mouseDragged(to: CGPoint(x: 300, y: press.y + 12))
+        harness.windows.userChange(Self.windowID, to: Self.frame.offsetBy(dx: 0, dy: 48))
+        harness.windows.cursorPosition = CGPoint(x: 300, y: press.y + 48)
+        harness.tracker.mouseDragged(to: CGPoint(x: 300, y: press.y + 20))
+        #expect(harness.recorder.startedWindows.first?.frameBeforeDrag == Self.frame)
+        // Snap areas still follow the event.
+        #expect(harness.recorder.started == [CGPoint(x: 300, y: press.y + 20)])
+    }
+
+    @Test func aWindowBehindTheCursorIsFoundAtThePress() {
+        let harness = Harness()
+        harness.addWindow()
+        // Pressed near the bottom edge; the cursor has left the window before the window starts to move.
+        let press = CGPoint(x: 300, y: Self.frame.maxY - 3)
+        harness.tracker.mouseDown(at: press)
+        harness.windows.cursorPosition = CGPoint(x: 300, y: press.y + 12)
+        harness.tracker.mouseDragged(to: CGPoint(x: 300, y: press.y + 12))
+        harness.windows.userChange(Self.windowID, to: Self.frame.offsetBy(dx: 0, dy: 20))
+        harness.windows.cursorPosition = CGPoint(x: 300, y: press.y + 20)
+        harness.tracker.mouseDragged(to: CGPoint(x: 300, y: press.y + 20))
+        #expect(harness.recorder.started.count == 1)
+    }
+
+    // MARK: Missed releases
+
+    @Test func aWindowDragWithTheButtonUpIsCancelled() {
+        let harness = Harness()
+        harness.addWindow()
+        harness.startWindowDrag()
+        harness.recorder.isButtonDown = false
+        harness.scheduler.fire()
+        #expect(harness.recorder.cancelled == 1)
+        #expect(harness.scheduler.activeTasks.isEmpty)
+    }
+
+    @Test func holdingTheWindowStillKeepsTheDrag() {
+        let harness = Harness()
+        harness.addWindow()
+        harness.startWindowDrag()
+        harness.scheduler.fire()
+        harness.scheduler.fire()
+        #expect(harness.recorder.cancelled == 0)
+        #expect(harness.tracker.isDraggingWindow)
+    }
+
+    @Test func theButtonIsOnlyCheckedDuringAWindowDrag() {
+        let harness = Harness()
+        harness.addWindow()
+        harness.tracker.mouseDown(at: Self.press)
+        harness.drag(by: 5)
+        #expect(harness.scheduler.tasks.isEmpty)
+        harness.dragWindow(by: 8)
+        #expect(harness.scheduler.activeTasks.count == 1)
+        harness.tracker.mouseUp(at: Self.press)
+        #expect(harness.scheduler.activeTasks.isEmpty)
     }
 
     @Test func aWindowThatClosesMidDragIsIgnored() {

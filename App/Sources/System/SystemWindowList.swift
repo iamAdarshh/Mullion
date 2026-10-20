@@ -18,6 +18,11 @@ struct SystemWindowList: WindowListing {
         Self.list(.optionIncludingWindow, relativeTo: id).first { $0.id == id }?.bounds
     }
 
+    func cursor() -> CGPoint? {
+        // A fresh event's location is the cursor now, in Quartz (AX) space.
+        CGEvent(source: nil)?.location
+    }
+
     private static func list(_ options: CGWindowListOption, relativeTo id: CGWindowID) -> [ListedWindow] {
         guard let info = CGWindowListCopyWindowInfo(options, id) as? [[String: Any]] else { return [] }
         return info.compactMap(ListedWindow.init(info:))

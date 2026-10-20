@@ -108,7 +108,7 @@ leftMouseDragged
    │  (text selection, scrollbars, resizing)
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
-mouseMoved with no button held (watched only during a window drag) ──► release was missed: cancel
+every 0.25 s during a window drag: left button no longer held ──► release was missed: cancel
 leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
 ```
 - During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again.

@@ -7,6 +7,9 @@ final class FakeWindowList: WindowListing {
     private(set) var windows: [ListedWindow] = []
     /// How many times anything was read.
     private(set) var reads = 0
+    /// Where the window server says the cursor is. `nil` makes the tracker use the event's position,
+    /// as if the event arrived the moment it happened.
+    var cursorPosition: CGPoint?
 
     func add(_ window: ListedWindow) {
         windows.append(window)
@@ -31,5 +34,9 @@ final class FakeWindowList: WindowListing {
     func bounds(of id: CGWindowID) -> CGRect? {
         reads += 1
         return windows.first { $0.id == id }?.bounds
+    }
+
+    func cursor() -> CGPoint? {
+        cursorPosition
     }
 }

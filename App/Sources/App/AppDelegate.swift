@@ -93,7 +93,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             dragSettings: { .defaults },
             actionSettings: { preferences.actionSettings }
         )
-        let tracker = DragTracker(windowList: SystemWindowList(), ownPID: ProcessInfo.processInfo.processIdentifier)
+        let tracker = DragTracker(
+            windowList: SystemWindowList(),
+            ownPID: ProcessInfo.processInfo.processIdentifier,
+            scheduler: TimerScheduler(),
+            isLeftButtonDown: { NSEvent.pressedMouseButtons & 1 != 0 }
+        )
         tracker.onMoveStarted = { [weak snapper] window, cursor in
             snapper?.dragStarted(windowFrame: window.frameBeforeDrag, at: cursor)
         }

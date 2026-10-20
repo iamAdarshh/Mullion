@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 /// Tells a window drag apart from every other mouse drag (ARCHITECTURE §6).
 ///
@@ -7,7 +8,9 @@ import CoreGraphics
 /// out. A press costs nothing. Once the mouse has moved `startDistance`, the window under the cursor
 /// is looked up once (under the cursor, not the press point: the window has already followed the
 /// cursor, so a press near its edge may no longer be over it), and its bounds are compared on later
-/// events. When the origin moves and the size doesn't, the user is dragging the window. A window
+/// events. The cursor used with a window read is the one sampled with it, not the event's: the window
+/// server moves the window before Mullion handles the event, so the event's position lags behind.
+/// When the origin moves and the size doesn't, the user is dragging the window. A window
 /// that hasn't moved by the time the cursor has travelled `giveUpDistance` means text selection, a
 /// scrollbar or a resize, and the rest of that drag is ignored without further reads (test-matrix
 /// case 15).
@@ -19,6 +22,8 @@ final class DragTracker {
     static let startDistance: CGFloat = 4
     /// How far the cursor may move without the window moving before the drag is ignored.
     static let giveUpDistance: CGFloat = 30
+    /// How often a window drag checks that the button is still held.
+    static let buttonCheckInterval: TimeInterval = 0.25
 
     /// The user started dragging a window. Passes the cursor.
     var onMoveStarted: ((DraggedWindow, CGPoint) -> Void)?
@@ -32,7 +37,8 @@ final class DragTracker {
     private enum Phase {
         case idle
         case pressed(CGPoint)
-        /// `window.bounds` was read when the cursor was at `readAt`, after a press at `press`.
+        /// `window.bounds` was read when the cursor was at `readAt` (sampled with the read), after a
+        /// press at `press`.
         case checking(ListedWindow, press: CGPoint, readAt: CGPoint)
         case moving(DraggedWindow)
         case ignored
@@ -40,12 +46,27 @@ final class DragTracker {
 
     private let windowList: any WindowListing
     private let ownPID: pid_t
+    private let scheduler: any RepeatingScheduler
+    private let isLeftButtonDown: () -> Bool
     private var phase = Phase.idle
+    /// Runs only while a window is being dragged. A missed release (in Mission Control, say) would
+    /// otherwise leave the drag and its preview running until the next click, even if the user only
+    /// types in the meantime. Holding the window still sends no events, so a timeout can't tell.
+    private var buttonCheck: (any ScheduledTask)?
 
-    /// - Parameter ownPID: Mullion's pid. Its own windows are never snapped.
-    init(windowList: any WindowListing, ownPID: pid_t) {
+    /// - Parameters:
+    ///   - ownPID: Mullion's pid. Its own windows are never snapped.
+    ///   - isLeftButtonDown: Whether the left mouse button is held right now.
+    init(
+        windowList: any WindowListing,
+        ownPID: pid_t,
+        scheduler: any RepeatingScheduler,
+        isLeftButtonDown: @escaping () -> Bool
+    ) {
         self.windowList = windowList
         self.ownPID = ownPID
+        self.scheduler = scheduler
+        self.isLeftButtonDown = isLeftButtonDown
     }
 
     /// True while a window is being dragged.
@@ -64,8 +85,12 @@ final class DragTracker {
     func mouseDragged(to point: CGPoint) {
         switch phase {
         case let .pressed(press) where distance(press, point) >= Self.startDistance:
-            if let window = windowList.window(at: point, excluding: ownPID) {
-                phase = .checking(window, press: press, readAt: point)
+            let cursor = windowList.cursor() ?? point
+            // Under the cursor first; the press point as a fallback, in case the window lags the cursor.
+            let found = windowList.window(at: cursor, excluding: ownPID)
+                ?? windowList.window(at: press, excluding: ownPID)
+            if let window = found {
+                phase = .checking(window, press: press, readAt: cursor)
             } else {
                 phase = .ignored
             }
@@ -82,37 +107,48 @@ final class DragTracker {
         if case let .moving(window) = phase {
             onEnded?(window, point)
         }
-        phase = .idle
+        becomeIdle()
     }
 
-    /// Forgets the current drag without a drop: Accessibility was revoked, or the mouse moved with no
-    /// button held, so the release was missed (for example it happened inside Mission Control).
+    /// Forgets the current drag without a drop, for example because Accessibility was revoked.
     func cancel() {
         if case let .moving(window) = phase {
             Log.drag.debug("Window drag cancelled")
             onCancelled?(window)
         }
-        phase = .idle
+        becomeIdle()
     }
 
     // MARK: Private
 
-    private func check(_ window: ListedWindow, press: CGPoint, readAt: CGPoint, cursor: CGPoint) {
+    private func check(_ window: ListedWindow, press: CGPoint, readAt: CGPoint, cursor eventPoint: CGPoint) {
         guard let bounds = windowList.bounds(of: window.id) else {
             phase = .ignored
             return
         }
+        let cursor = windowList.cursor() ?? eventPoint
         if isMove(from: window.bounds, to: bounds) {
             // The window follows the cursor one to one, so it had moved by as much as the cursor when
             // it was read: take that back off to get where it started.
             let before = window.bounds.offsetBy(dx: press.x - readAt.x, dy: press.y - readAt.y)
             let dragged = DraggedWindow(id: window.id, pid: window.pid, frameBeforeDrag: before)
             phase = .moving(dragged)
+            buttonCheck = scheduler.schedule(every: Self.buttonCheckInterval, tolerance: 0.05) { [weak self] in
+                guard let self, !isLeftButtonDown() else { return }
+                cancel()
+            }
             Log.drag.debug("Window drag started")
-            onMoveStarted?(dragged, cursor)
+            // Snap areas follow the event's position, like every later drag event.
+            onMoveStarted?(dragged, eventPoint)
         } else if distance(readAt, cursor) >= Self.giveUpDistance {
             phase = .ignored
         }
+    }
+
+    private func becomeIdle() {
+        phase = .idle
+        buttonCheck?.cancel()
+        buttonCheck = nil
     }
 
     /// Moved by at least a point, and kept its size: dragging the left edge to resize also moves the origin.

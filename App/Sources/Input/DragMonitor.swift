@@ -10,9 +10,6 @@ import MullionCore
 final class DragMonitor {
     private let tracker: DragTracker
     private var monitor: Any?
-    /// Watches for the mouse moving with no button held, only while a window is being dragged: that
-    /// means the release was missed, and the drag is cancelled.
-    private var releaseMonitor: Any?
 
     init(tracker: DragTracker) {
         self.tracker = tracker
@@ -27,7 +24,6 @@ final class DragMonitor {
             NSEvent.removeMonitor(monitor)
             self.monitor = nil
             tracker.cancel()
-            updateReleaseMonitor()
             Log.drag.info("Drag monitor stopped")
         }
     }
@@ -51,18 +47,7 @@ final class DragMonitor {
         case .leftMouseDown: tracker.mouseDown(at: point)
         case .leftMouseDragged: tracker.mouseDragged(to: point)
         case .leftMouseUp: tracker.mouseUp(at: point)
-        case .mouseMoved: tracker.cancel()
         default: break
-        }
-        updateReleaseMonitor()
-    }
-
-    private func updateReleaseMonitor() {
-        if tracker.isDraggingWindow, releaseMonitor == nil {
-            releaseMonitor = addMonitor(for: .mouseMoved)
-        } else if !tracker.isDraggingWindow, let releaseMonitor {
-            NSEvent.removeMonitor(releaseMonitor)
-            self.releaseMonitor = nil
         }
     }
 
