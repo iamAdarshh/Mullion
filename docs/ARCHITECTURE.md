@@ -100,13 +100,16 @@ Finding the focused window: `AXUIElementCreateApplication(frontmostApp.pid)`, th
 
 ## 6. Drag-to-snap pipeline (M2)
 ```
-leftMouseDown ──► remember (window under cursor, its frame)
-leftMouseDragged (throttled to display Hz)
-   ├─ first time: has window origin moved? no → ignore this drag (text selection etc.)
+leftMouseDown ──► remember the press point (no window lookup yet)
+leftMouseDragged
+   ├─ after 4 pt: window under the press point, from CGWindowList (number, pid, bounds)
+   ├─ until it moves: has its origin moved with the same size? not within 30 pt → ignore this drag
+   │  (text selection, scrollbars, resizing)
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
 leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
 ```
+- During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again.
 - Hysteresis: once an area is entered, the cursor has to move 8 pt past the area's edge before it counts as having left. This prevents flicker at boundaries.
 - The overlay is one `NSPanel` per screen with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient]`. Panels are created lazily and reused.
 

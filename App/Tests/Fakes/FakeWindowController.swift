@@ -14,8 +14,6 @@ actor FakeWindowController: WindowControlling {
     private(set) var windows: [WindowRef: Window] = [:]
     private(set) var setFrameCalls: [CGRect] = []
     private(set) var focusedWindowCalls = 0
-    private(set) var windowAtCalls = 0
-    private(set) var frameCalls = 0
     /// The pid of every window `isAlive` was asked about, in order.
     private(set) var isAliveCalls: [pid_t] = []
     private var focused: WindowRef?
@@ -48,11 +46,6 @@ actor FakeWindowController: WindowControlling {
         resizesBeforeFailing = afterResizing
     }
 
-    /// Moves or resizes a window the way the user would, without recording a `setFrame` call.
-    func userChange(_ window: WindowRef, to frame: CGRect) {
-        windows[window]?.frame = frame
-    }
-
     func frame(ofWindow window: WindowRef) -> CGRect? {
         windows[window]?.frame
     }
@@ -67,12 +60,10 @@ actor FakeWindowController: WindowControlling {
 
     /// The first live window whose frame contains `point`.
     func window(at point: CGPoint) throws -> WindowRef? {
-        windowAtCalls += 1
-        return windows.first { $0.value.isAlive && $0.value.frame.contains(point) }?.key
+        windows.first { $0.value.isAlive && $0.value.frame.contains(point) }?.key
     }
 
     func frame(of window: WindowRef) throws -> CGRect {
-        frameCalls += 1
         guard let fake = windows[window], fake.isAlive else { throw AXWindowError.elementGone }
         return fake.frame
     }

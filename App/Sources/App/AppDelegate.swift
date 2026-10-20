@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hotkeys = HotkeyService { [weak dispatcher] action in
             dispatcher?.perform(action)
         }
-        let (dragMonitor, dragSnapper) = Self.makeDragToSnap(windows: windows)
+        let (dragMonitor, dragSnapper) = Self.makeDragToSnap()
         self.accessibility = accessibility
         self.menuBar = menuBar
         self.dispatcher = dispatcher
@@ -86,9 +86,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Connects the mouse monitor to the snap-area tracking (PRD §6.4).
-    private static func makeDragToSnap(windows: AXQueue) -> (DragMonitor, DragSnapController) {
+    private static func makeDragToSnap() -> (DragMonitor, DragSnapController) {
         let snapper = DragSnapController(screens: SystemScreens(), settings: { .defaults })
-        let tracker = DragTracker(windows: windows, ownPID: ProcessInfo.processInfo.processIdentifier)
+        let tracker = DragTracker(windowList: SystemWindowList(), ownPID: ProcessInfo.processInfo.processIdentifier)
         tracker.onMoveStarted = { [weak snapper] _, cursor in snapper?.dragStarted(at: cursor) }
         tracker.onMoved = { [weak snapper] _, cursor in snapper?.dragMoved(to: cursor) }
         tracker.onEnded = { [weak snapper] _, cursor in snapper?.dragEnded(at: cursor) }

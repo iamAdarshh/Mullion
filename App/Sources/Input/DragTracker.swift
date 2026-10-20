@@ -2,12 +2,13 @@ import CoreGraphics
 
 /// Tells a window drag apart from every other mouse drag (ARCHITECTURE §6).
 ///
-/// A mouse press costs nothing: a frozen app under the cursor must not slow down every click. Once
-/// the mouse has moved `startDistance`, the window under the press point is looked up once and its
-/// frame read. Later frames are compared with that one, one AX read at a time: when the origin moves
-/// and the size doesn't, the user is dragging the window. A window that hasn't moved by the time the
+/// Window positions come from the window server (`WindowListing`), never from Accessibility: while
+/// the user drags a window by its title bar, its app is busy in the drag loop and every AX read times
+/// out. A press costs nothing. Once the mouse has moved `startDistance`, the window under the press
+/// point is looked up once, and its bounds are compared on later events: when the origin moves and
+/// the size doesn't, the user is dragging the window. A window that hasn't moved by the time the
 /// cursor has travelled `giveUpDistance` means text selection, a scrollbar or a resize, and the rest
-/// of that drag is ignored without further AX calls (test-matrix case 15).
+/// of that drag is ignored without further reads (test-matrix case 15).
 ///
 /// All points are in AX space.
 @MainActor
@@ -18,58 +19,60 @@ final class DragTracker {
     static let giveUpDistance: CGFloat = 30
 
     /// The user started dragging a window. Passes the cursor.
-    var onMoveStarted: ((WindowRef, CGPoint) -> Void)?
+    var onMoveStarted: ((ListedWindow, CGPoint) -> Void)?
     /// The cursor moved while dragging a window.
-    var onMoved: ((WindowRef, CGPoint) -> Void)?
+    var onMoved: ((ListedWindow, CGPoint) -> Void)?
     /// The user let go of a window they were dragging.
-    var onEnded: ((WindowRef, CGPoint) -> Void)?
+    var onEnded: ((ListedWindow, CGPoint) -> Void)?
 
     private enum Phase {
         case idle
         case pressed(CGPoint)
-        case identifying
-        /// `original` is the frame read at `readAt`; later reads are compared with it.
-        case checking(WindowRef, original: CGRect, readAt: CGPoint)
-        case moving(WindowRef)
+        /// `window.bounds` was read when the cursor was at `readAt`; later reads are compared with it.
+        case checking(ListedWindow, readAt: CGPoint)
+        case moving(ListedWindow)
         case ignored
     }
 
-    private let windows: any WindowControlling
+    private let windowList: any WindowListing
     private let ownPID: pid_t
     private var phase = Phase.idle
-    private var cursor = CGPoint.zero
-    /// Bumped by every press and release, so an AX answer that arrives after its drag ended is dropped.
-    private var generation = 0
-    private var isChecking = false
 
     /// - Parameter ownPID: Mullion's pid. Its own windows are never snapped.
-    init(windows: any WindowControlling, ownPID: pid_t) {
-        self.windows = windows
+    init(windowList: any WindowListing, ownPID: pid_t) {
+        self.windowList = windowList
         self.ownPID = ownPID
     }
 
     func mouseDown(at point: CGPoint) {
-        reset()
         phase = .pressed(point)
-        cursor = point
     }
 
-    /// Returns the AX work this event started, if any, so tests can wait for it.
-    @discardableResult
-    func mouseDragged(to point: CGPoint) -> Task<Void, Never>? {
-        cursor = point
+    func mouseDragged(to point: CGPoint) {
         switch phase {
         case let .pressed(start) where distance(start, point) >= Self.startDistance:
-            phase = .identifying
-            return identify(at: start)
-        case let .checking(window, original, readAt) where !isChecking:
-            return check(window, original: original, readAt: readAt)
+            if let window = windowList.window(at: start, excluding: ownPID) {
+                phase = .checking(window, readAt: point)
+            } else {
+                phase = .ignored
+            }
+        case let .checking(window, readAt):
+            guard let bounds = windowList.bounds(of: window.id) else {
+                phase = .ignored
+                return
+            }
+            if isMove(from: window.bounds, to: bounds) {
+                phase = .moving(window)
+                Log.drag.debug("Window drag started")
+                onMoveStarted?(window, point)
+            } else if distance(readAt, point) >= Self.giveUpDistance {
+                phase = .ignored
+            }
         case let .moving(window):
             onMoved?(window, point)
         default:
             break
         }
-        return nil
     }
 
     func mouseUp(at point: CGPoint) {
@@ -81,65 +84,17 @@ final class DragTracker {
 
     /// Forgets the current drag without ending it, for example when Accessibility is revoked.
     func reset() {
-        generation += 1
         phase = .idle
-        isChecking = false
     }
 
     // MARK: Private
 
-    private func identify(at start: CGPoint) -> Task<Void, Never> {
-        let generation = generation
-        return Task {
-            do {
-                guard let window = try await windows.window(at: start), window.pid != ownPID else {
-                    ignore(generation)
-                    return
-                }
-                let frame = try await windows.frame(of: window)
-                guard generation == self.generation else { return }
-                phase = .checking(window, original: frame, readAt: cursor)
-            } catch {
-                Log.drag.debug("Couldn't identify the dragged window: \(String(describing: error), privacy: .public)")
-                ignore(generation)
-            }
-        }
-    }
-
-    private func check(_ window: WindowRef, original: CGRect, readAt: CGPoint) -> Task<Void, Never> {
-        isChecking = true
-        let generation = generation
-        return Task {
-            do {
-                let frame = try await windows.frame(of: window)
-                guard generation == self.generation else { return }
-                isChecking = false
-                if isMove(from: original, to: frame) {
-                    phase = .moving(window)
-                    Log.drag.debug("Window drag started")
-                    onMoveStarted?(window, cursor)
-                } else if distance(readAt, cursor) >= Self.giveUpDistance {
-                    phase = .ignored
-                }
-            } catch {
-                Log.drag.debug("Couldn't read the dragged window: \(String(describing: error), privacy: .public)")
-                ignore(generation)
-            }
-        }
-    }
-
-    private func ignore(_ generation: Int) {
-        guard generation == self.generation else { return }
-        phase = .ignored
-        isChecking = false
-    }
-
     /// Moved by at least a point, and kept its size: dragging the left edge to resize also moves the origin.
-    private func isMove(from original: CGRect, to frame: CGRect) -> Bool {
+    private func isMove(from original: CGRect, to bounds: CGRect) -> Bool {
         let tolerance: CGFloat = 1
-        let sameSize = abs(frame.width - original.width) <= tolerance
-            && abs(frame.height - original.height) <= tolerance
-        return sameSize && distance(frame.origin, original.origin) >= tolerance
+        let sameSize = abs(bounds.width - original.width) <= tolerance
+            && abs(bounds.height - original.height) <= tolerance
+        return sameSize && distance(bounds.origin, original.origin) >= tolerance
     }
 
     private func distance(_ lhs: CGPoint, _ rhs: CGPoint) -> CGFloat {

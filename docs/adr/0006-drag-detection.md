@@ -17,6 +17,9 @@ Drag-to-snap needs to observe mouse drags system-wide but never block them. Grab
 - **M6 Grab & Move:** option 3, isolated in `GrabTap`, running on its own thread with its own run loop. It is enabled only while the feature is on, and it re-enables itself on `tapDisabledByTimeout`.
 - If option 1 turns out to be too slow on high-refresh displays, switch drag-to-snap to option 2 and record that in a new ADR.
 
+## Update (2026-10-20): reading the dragged window
+While a window is dragged by its title bar, its app is busy in the drag loop and doesn't answer Accessibility requests, so every AX frame read during the drag timed out (`kAXErrorCannotComplete`). During the drag Mullion therefore reads the window's position from the window server with `CGWindowListCopyWindowInfo`, which answers without asking the app. This is not option 4: the list is read once when the drag starts and then only for that one window, on mouse events, until it is seen to move. The AX element is looked up once at the drop. Only window number, owner pid, layer and bounds are read, so no Screen Recording permission is needed.
+
 ## Consequences
 - v1 can never swallow a user's click.
 - Two input paths to maintain. Both feed the same `SnapAreaResolver`.
