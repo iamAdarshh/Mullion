@@ -122,6 +122,19 @@ struct ActionDispatcherDropTests {
         #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.leftHalf)
     }
 
+    // Regression: the last fallback took the main window whenever its size matched, wherever it was,
+    // so a ⌘-drag of a background window of the default size could snap the main window instead.
+    @Test func aMainWindowOfTheSameSizeElsewhereIsNotSnapped() async {
+        let harness = Harness()
+        let elsewhere = CGRect(x: 800, y: 100, width: Self.atDrop.width, height: Self.atDrop.height)
+        await harness.windows.add(harness.focused, frame: elsewhere)
+        await harness.windows.focus(harness.focused)
+        await harness.windows.add(harness.dragged, frame: Self.atDrop.offsetBy(dx: 40, dy: 0))
+        await harness.drop()
+        #expect(await harness.windows.frame(ofWindow: harness.focused) == elsewhere)
+        #expect(await harness.windows.setFrameCalls.isEmpty)
+    }
+
     @Test func restoreAfterReSnappingGoesBackToBeforeTheFirstSnap() async {
         let harness = Harness()
         await harness.addWindows()
@@ -264,6 +277,27 @@ extension ActionDispatcherDropTests {
         await dragAway(harness, to: nearlyThere, cursor: CGPoint(x: 148, y: 48))
         #expect(await harness.windows.setFrameCalls.count == moves)
         #expect(harness.dispatcher.rememberedWindows.contains(harness.dragged))
+    }
+
+    /// A new window cascaded 22 pt from a snapped sibling has the same size, so the quick check by app
+    /// passes; the decision still comes from the dropped window's own record, and it was never snapped.
+    @Test func aCascadedSiblingOfASnappedWindowKeepsItsSize() async {
+        let harness = Harness()
+        await snapThenDrag(harness, to: Self.leftHalf)
+        let sibling = WindowRef(element: AXUIElementCreateApplication(Self.pid + 200), pid: Self.pid)
+        let cascaded = Self.leftHalf.offsetBy(dx: 22, dy: 22)
+        let droppedAt = cascaded.offsetBy(dx: 300, dy: 50)
+        await harness.windows.add(sibling, frame: droppedAt)
+        await harness.windows.focus(sibling)
+        let moves = await harness.windows.setFrameCalls.count
+        let window = DroppedWindow(pid: Self.pid, frameBeforeDrag: cascaded, frame: droppedAt)
+        await harness.dispatcher.restoreSize(
+            ofDropped: window,
+            cursor: CGPoint(x: droppedAt.minX + 100, y: droppedAt.minY + 10)
+        ).value
+        #expect(await harness.windows.frame(ofWindow: sibling) == droppedAt)
+        #expect(await harness.windows.setFrameCalls.count == moves)
+        #expect(await harness.windows.windowLookups == 2)
     }
 
     @Test func withTheSettingOffTheWindowKeepsItsSize() async {

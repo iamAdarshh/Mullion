@@ -117,12 +117,11 @@ final class ActionDispatcher {
     func restoreSize(ofDropped window: DroppedWindow, cursor: CGPoint) -> Task<Void, Never> {
         guard restoresSizeOnDragAway() else { return Task {} }
         guard store.hasSnap(pid: window.pid, frameBeforeDrag: window.frameBeforeDrag) else {
-            let before = String(describing: window.frameBeforeDrag)
-            let snaps = String(describing: store.snapFrames(pid: window.pid))
-            Log.drag
-                .debug(
-                    "Drag-away: not at a snap. Before: \(before, privacy: .public), snaps: \(snaps, privacy: .public)"
-                )
+            let snaps = store.snapFrames(pid: window.pid)
+            Log.drag.debug("""
+            Drag-away: not at a snap. Before: \(String(describing: window.frameBeforeDrag), privacy: .public), \
+            snaps: \(String(describing: snaps), privacy: .public)
+            """)
             return Task {}
         }
         return enqueue(Request(

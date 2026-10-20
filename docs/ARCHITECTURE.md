@@ -110,7 +110,9 @@ leftMouseDragged
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
 every 0.25 s during a window drag: button up on two checks in a row ──► release was missed: cancel
 leftMouseUp ──► hide overlay; if area: ActionDispatcher.perform(area.action, onDropped:, on: area.screen)
-   │  └─ the app's AX windows, matched to the window-server bounds within 2 pt (asked again once if busy)
+   │  └─ the app's main window, then its other standard windows, matched to the window-server bounds
+   │     within 2 pt; else the main window if it has the same size within 30 pt (the app nudged it);
+   │     asked again once if busy
    └─ no area, and the window was still at its last snap when the drag began (size within 2 pt,
       origin within 30 pt): DragAwayPlanner [Core] gives it its pre-snap size under the cursor
       (no AX call for windows Mullion never snapped)

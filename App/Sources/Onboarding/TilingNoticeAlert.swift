@@ -22,10 +22,16 @@ struct TilingNoticeAlert: TilingNoticePresenting {
             localized: "Don't Show Again",
             comment: "Button: never show the macOS tiling notice again."
         ))
-        // A menu bar app isn't active, so its alert would open behind the frontmost window.
+        // A menu bar app isn't active, so its alert would open behind the frontmost window. Remember who
+        // was, and hand focus back afterwards: Mullion has no window to keep, and while it stays active
+        // every shortcut would find no window to act on.
+        let previous = NSWorkspace.shared.frontmostApplication
         NSApp.activate()
-        let response = alert.runModal()
-        completion(response == .alertFirstButtonReturn ? .openSettings : .dontShowAgain)
+        let choice: TilingNoticeChoice = alert.runModal() == .alertFirstButtonReturn ? .openSettings : .dontShowAgain
+        if choice == .dontShowAgain, let previous, previous != NSRunningApplication.current {
+            previous.activate()
+        }
+        completion(choice)
     }
 
     static func openSettings() {

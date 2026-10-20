@@ -73,7 +73,7 @@ actor FakeWindowController: WindowControlling {
             throw lookupErrors.removeFirst()
         }
         // Like `AXWindow`: the focused (main) window if it matches, then any other window that does,
-        // then the focused window if only its origin differs.
+        // then the focused window if its app nudged it a little.
         let alive = windows.filter { $0.key.pid == pid && $0.value.isAlive }
         let main = focused.flatMap { ref in alive[ref].map { (ref, $0.frame) } }
         if let main, main.1.isApproximatelyEqual(to: frame, tolerance: tolerance) {
@@ -82,7 +82,7 @@ actor FakeWindowController: WindowControlling {
         if let other = alive.first(where: { $0.value.frame.isApproximatelyEqual(to: frame, tolerance: tolerance) }) {
             return other.key
         }
-        if let main, abs(main.1.width - frame.width) <= tolerance, abs(main.1.height - frame.height) <= tolerance {
+        if let main, AXWindow.isNudged(main.1, from: frame, tolerance: tolerance) {
             return main.0
         }
         return nil

@@ -28,7 +28,9 @@ enum AXWindow {
     ///    bar makes it the main window, so this is almost always the one, in one or two calls. It also
     ///    wins over a hidden native tab or another window at exactly the same frame.
     /// 2. Otherwise the first other standard window whose frame matches (a ⌘-drag of a background window).
-    /// 3. Otherwise the main window if only its origin differs: some apps nudge their window after a drop.
+    /// 3. Otherwise the main window if it has the same size and is within `nudgeTolerance` of the drop:
+    ///    some apps nudge their window after a drop. Never a main window elsewhere on screen, which would
+    ///    snap a window the user didn't drag.
     ///
     /// - Throws: `AXWindowError.appNotResponding` as soon as any read times out, so a busy app costs one
     ///   timeout rather than one per window, and the caller can ask again.
@@ -46,12 +48,13 @@ enum AXWindow {
             else { continue }
             return window
         }
-        if let main, let mainFrame, hasSameSize(mainFrame, frame, tolerance: tolerance) {
+        if let main, let mainFrame, isNudged(mainFrame, from: frame, tolerance: tolerance) {
             return main
         }
-        let dropped = String(describing: frame)
-        let found = mainFrame.map { String(describing: $0) } ?? "none"
-        Log.ax.debug("No AX window at the drop \(dropped, privacy: .public); main: \(found, privacy: .public)")
+        Log.ax.debug("""
+        No AX window at the drop \(String(describing: frame), privacy: .public); \
+        main: \(String(describing: mainFrame), privacy: .public)
+        """)
         return nil
     }
 
@@ -172,8 +175,14 @@ enum AXWindow {
         }
     }
 
-    private static func hasSameSize(_ lhs: CGRect, _ rhs: CGRect, tolerance: CGFloat) -> Bool {
-        abs(lhs.width - rhs.width) <= tolerance && abs(lhs.height - rhs.height) <= tolerance
+    /// How far an app may nudge its window after a drop and still be the window that was dropped.
+    static let nudgeTolerance: CGFloat = 30
+
+    /// Whether `window` is the dropped window at `frame`, moved a little by its app: the same size,
+    /// within `tolerance`, and an origin within `nudgeTolerance`.
+    static func isNudged(_ window: CGRect, from frame: CGRect, tolerance: CGFloat) -> Bool {
+        abs(window.width - frame.width) <= tolerance && abs(window.height - frame.height) <= tolerance
+            && hypot(window.minX - frame.minX, window.minY - frame.minY) <= nudgeTolerance
     }
 
     /// A standard window that isn't full screen: the only kind Mullion moves (AC-3).
