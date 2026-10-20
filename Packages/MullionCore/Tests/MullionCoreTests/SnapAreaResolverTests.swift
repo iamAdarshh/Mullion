@@ -15,6 +15,7 @@ struct SnapAreaResolverTests {
             (CGPoint(x: frame.maxX - inset, y: frame.minY + inset), .topRight),
             (CGPoint(x: frame.minX + inset, y: frame.maxY - inset), .bottomLeft),
             (CGPoint(x: frame.maxX - inset, y: frame.maxY - inset), .bottomRight),
+            (CGPoint(x: frame.midX, y: frame.maxY - inset), screen.isPortrait ? .bottomHalf : .centerThird),
         ]
     }
 
@@ -116,6 +117,79 @@ struct SnapAreaResolverTests {
         let left = resolve(CGPoint(x: 1471, y: 400), on: screens, previous: gone)
         #expect(left?.area == .left)
         #expect(left?.screen.id == "studioRight")
+    }
+
+    /// A point in an area next to an edge shared by two displays, and a point 1 pt over that edge on
+    /// the neighbouring display.
+    struct SharedEdge: Sendable, CustomTestStringConvertible {
+        let screens: [ScreenGeometry]
+        let start: CGPoint
+        let over: CGPoint
+        /// The screen the area belongs to.
+        let owner: String
+
+        var testDescription: String {
+            "\(owner) at \(start) among \(screens.map(\.id).joined(separator: ", "))"
+        }
+    }
+
+    static let sharedEdges = [
+        SharedEdge(
+            screens: Screens.laptopLeftOfExternal,
+            start: CGPoint(x: 1469, y: 400),
+            over: CGPoint(x: 1470, y: 400),
+            owner: "macBookAir13"
+        ),
+        SharedEdge(
+            screens: Screens.laptopLeftOfExternal,
+            start: CGPoint(x: 1470, y: 400),
+            over: CGPoint(x: 1469, y: 400),
+            owner: "studioRight"
+        ),
+        SharedEdge(
+            screens: Screens.externalAbovePrimary,
+            start: CGPoint(x: 735, y: 1),
+            over: CGPoint(x: 735, y: -1),
+            owner: "macBookAir13"
+        ),
+        SharedEdge(
+            screens: Screens.portraitLeftOfPrimary,
+            start: CGPoint(x: 0, y: 400),
+            over: CGPoint(x: -1, y: 400),
+            owner: "macBookAir13"
+        ),
+        SharedEdge(
+            screens: Screens.portraitLeftOfPrimary,
+            start: CGPoint(x: -1, y: 400),
+            over: CGPoint(x: 0, y: 400),
+            owner: "portraitLeft"
+        ),
+        SharedEdge(
+            screens: Screens.ultrawideLeftOfPrimary,
+            start: CGPoint(x: 0, y: 400),
+            over: CGPoint(x: -1, y: 400),
+            owner: "macBookAir13"
+        ),
+        SharedEdge(
+            screens: Screens.threeDisplays,
+            start: CGPoint(x: -1, y: 400),
+            over: CGPoint(x: 0, y: 400),
+            owner: "studioLeft"
+        ),
+        SharedEdge(
+            screens: Screens.threeDisplays,
+            start: CGPoint(x: 1470, y: 400),
+            over: CGPoint(x: 1469, y: 400),
+            owner: "portraitRight"
+        ),
+    ]
+
+    @Test(arguments: sharedEdges)
+    func everySharedEdgeHoldsItsArea(edge: SharedEdge) {
+        let first = resolve(edge.start, on: edge.screens)
+        #expect(first?.screen.id == edge.owner)
+        #expect(first != nil)
+        #expect(resolve(edge.over, on: edge.screens, previous: first) == first)
     }
 
     @Test func anAreaIsKeptAcrossASharedEdgeBetweenDisplaysAboveAndBelow() {

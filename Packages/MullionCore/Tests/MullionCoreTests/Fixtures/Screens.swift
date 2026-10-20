@@ -73,7 +73,11 @@ enum Screens {
     ]
 
     /// Every screen of every arrangement, including non-primary screens left of and above the primary.
-    static let all: [ScreenGeometry] = arrangements.flatMap(\.self)
+    /// Each screen appears once, so parameterised tests don't repeat identical cases.
+    static let all: [ScreenGeometry] = {
+        var seen = Set<String>()
+        return arrangements.flatMap(\.self).filter { seen.insert($0.id).inserted }
+    }()
 
     /// Every landscape screen: these split the bottom edge into thirds for drag-to-snap.
     static let landscape = all.filter { !$0.isPortrait }

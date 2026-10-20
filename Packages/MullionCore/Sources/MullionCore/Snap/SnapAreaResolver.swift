@@ -5,8 +5,9 @@ public enum SnapAreaResolver {
     /// The area under `cursor`, or `nil` when it is in none.
     ///
     /// - Parameters:
-    ///   - cursor: Already converted to AX space with `CoordinateSpace`. Screen frames are half-open,
-    ///     so a point exactly on a screen's `maxX` or `maxY` belongs to no screen.
+    ///   - cursor: Already converted to AX space with `CoordinateSpace`. Screen frames are half-open:
+    ///     a point exactly on a screen's `maxX` or `maxY` is not on that screen, but on the neighbour
+    ///     that starts there, if there is one.
     ///   - previous: The result for the last cursor position of this drag. Once the cursor is in an
     ///     area it stays there until it is `DragSettings.hysteresis` past the area's edge, even when
     ///     that is on a neighbouring display, so a cursor wobbling on a boundary never flickers between
