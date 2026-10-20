@@ -96,7 +96,8 @@ final class DragSnapController {
             match.map(Drop.snap) ?? .free
         }
         let area = match.map(\.action.rawValue) ?? "no area"
-        Log.drag.debug("Window drag ended in \(area, privacy: .public)")
+        let reason = isIgnoredDrag ? " (app ignored)" : isSnappingDisabled ? " (⌥ held)" : ""
+        Log.drag.debug("Window drag ended in \(area, privacy: .public)\(reason, privacy: .public)")
         finish()
         return drop
     }
