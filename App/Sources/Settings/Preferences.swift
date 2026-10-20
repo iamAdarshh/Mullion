@@ -10,6 +10,9 @@ final class Preferences {
         static let almostMaximizePercent = "almostMaximizePercent"
         static let resizeStep = "resizeStep"
         static let repeatBehavior = "repeatBehavior"
+        static let ignoredBundleIDs = "ignoredBundleIDs"
+        static let restoresSizeOnDragAway = "restoresSizeOnDragAway"
+        static let hidesTilingNotice = "hidesTilingNotice"
     }
 
     private let defaults: UserDefaults
@@ -22,6 +25,7 @@ final class Preferences {
             Key.almostMaximizePercent: Int((fallback.almostMaximizeFraction * 100).rounded()),
             Key.resizeStep: Double(fallback.resizeStep),
             Key.repeatBehavior: fallback.repeatBehavior.rawValue,
+            Key.restoresSizeOnDragAway: true,
         ])
     }
 
@@ -42,6 +46,35 @@ final class Preferences {
             defaults.set(Int((newValue.almostMaximizeFraction * 100).rounded()), forKey: Key.almostMaximizePercent)
             defaults.set(Double(newValue.resizeStep), forKey: Key.resizeStep)
             defaults.set(newValue.repeatBehavior.rawValue, forKey: Key.repeatBehavior)
+        }
+    }
+
+    /// Whether a snapped window dragged away and dropped outside every snap area gets its size from
+    /// before the snap back (PRD §6.3, §6.8 General).
+    var restoresSizeOnDragAway: Bool {
+        get { defaults.bool(forKey: Key.restoresSizeOnDragAway) }
+        set { defaults.set(newValue, forKey: Key.restoresSizeOnDragAway) }
+    }
+
+    /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).
+    var hidesTilingNotice: Bool {
+        get { defaults.bool(forKey: Key.hidesTilingNotice) }
+        set { defaults.set(newValue, forKey: Key.hidesTilingNotice) }
+    }
+
+    /// Apps whose windows never snap when dragged, by bundle ID (PRD §6.4). Shortcuts and the menu
+    /// still act on them: those are a deliberate request for the frontmost window.
+    var ignoredBundleIDs: Set<String> {
+        get { Set(defaults.stringArray(forKey: Key.ignoredBundleIDs) ?? []) }
+        set { defaults.set(newValue.sorted(), forKey: Key.ignoredBundleIDs) }
+    }
+
+    /// Adds the app to the ignore list, or takes it off.
+    func setIgnored(_ ignored: Bool, bundleID: String) {
+        if ignored {
+            ignoredBundleIDs.insert(bundleID)
+        } else {
+            ignoredBundleIDs.remove(bundleID)
         }
     }
 }

@@ -22,4 +22,10 @@ public struct ScreenGeometry: Equatable, Hashable, Sendable, Identifiable {
     public var isPortrait: Bool {
         frame.height > frame.width
     }
+
+    /// `rect` (AX space) relative to this screen's top-left corner, for drawing in a view that covers
+    /// the screen and has a top-left origin (the drag preview). No y-flip: both spaces grow downwards.
+    public func localRect(_ rect: CGRect) -> CGRect {
+        rect.offsetBy(dx: -frame.minX, dy: -frame.minY)
+    }
 }

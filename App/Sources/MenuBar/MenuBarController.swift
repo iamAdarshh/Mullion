@@ -11,11 +11,24 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     var onMenuWillOpen: (() -> Void)?
     /// Called when the user chooses an action from the menu.
     var onAction: ((WindowAction) -> Void)?
+    /// The app the *Ignore* item is about, asked each time the menu opens. `nil` hides the item.
+    var ignorableApp: (() -> IgnorableApp?)?
+    /// Called when the user puts an app on the ignore list (`true`) or takes it off, with its bundle ID.
+    var onSetIgnored: ((Bool, String) -> Void)?
+
+    /// An app that can go on the drag-to-snap ignore list (PRD §6.4, §6.7).
+    struct IgnorableApp {
+        let bundleID: String
+        let name: String
+        let isIgnored: Bool
+    }
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let menu = NSMenu()
     private let grantItem = NSMenuItem()
     private let grantSeparator = NSMenuItem.separator()
+    private let ignoreItem = NSMenuItem()
+    private let ignoreSeparator = NSMenuItem.separator()
     private var isTrusted: Bool
 
     init(isTrusted: Bool) {
@@ -46,6 +59,7 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
 
     func menuWillOpen(_: NSMenu) {
         onMenuWillOpen?()
+        updateIgnoreItem()
     }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
@@ -70,6 +84,11 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
             }
             menu.addItem(.separator())
         }
+
+        ignoreItem.action = #selector(toggleIgnored(_:))
+        ignoreItem.target = self
+        menu.addItem(ignoreItem)
+        menu.addItem(ignoreSeparator)
 
         // No action until the Settings window exists (M3), so AppKit shows it disabled.
         menu.addItem(withTitle: String(localized: "Settings…"), action: nil, keyEquivalent: ",")
@@ -97,6 +116,25 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
               let action = WindowAction(rawValue: rawValue)
         else { return }
         onAction?(action)
+    }
+
+    /// Names the frontmost app, ticked when it's ignored. Hidden when there is none, or it's Mullion.
+    private func updateIgnoreItem() {
+        let app = ignorableApp?()
+        ignoreItem.isHidden = app == nil
+        ignoreSeparator.isHidden = app == nil
+        guard let app else { return }
+        ignoreItem.title = String(
+            localized: "Ignore “\(app.name)”",
+            comment: "Menu item. Windows of the named app never snap when dragged."
+        )
+        ignoreItem.state = app.isIgnored ? .on : .off
+        ignoreItem.representedObject = app.bundleID
+    }
+
+    @objc private func toggleIgnored(_ sender: NSMenuItem) {
+        guard let bundleID = sender.representedObject as? String else { return }
+        onSetIgnored?(sender.state != .on, bundleID)
     }
 
     @objc private func grantAccess() {

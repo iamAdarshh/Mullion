@@ -100,15 +100,29 @@ Finding the focused window: `AXUIElementCreateApplication(frontmostApp.pid)`, th
 
 ## 6. Drag-to-snap pipeline (M2)
 ```
-leftMouseDown ──► remember (window under cursor, its frame)
-leftMouseDragged (throttled to display Hz)
-   ├─ first time: has window origin moved? no → ignore this drag (text selection etc.)
+leftMouseDown ──► remember the press point (no window lookup yet)
+leftMouseDragged
+   ├─ after 4 pt: frontmost window under the cursor or the press point, from CGWindowList (number,
+   │  pid, bounds); the window may already be ahead of the press point, or still behind the cursor
+   ├─ until it moves: has its origin moved with the same size? not within 30 pt → ignore this drag
+   │  (text selection, scrollbars, resizing)
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
-leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
+every 0.25 s during a window drag: button up on two checks in a row ──► release was missed: cancel
+leftMouseUp ──► hide overlay; if area: ActionDispatcher.perform(area.action, onDropped:, on: area.screen)
+   │  └─ the app's main window, then its other standard windows, matched to the window-server bounds
+   │     within 2 pt; else the main window if it has the same size within 30 pt (the app nudged it);
+   │     asked again once if busy
+   └─ no area, and the window was still at its last snap when the drag began (size within 2 pt,
+      origin within 30 pt): DragAwayPlanner [Core] gives it its pre-snap size under the cursor
+      (no AX call for windows Mullion never snapped)
+flagsChanged / any mouse event ──► ⌥ held? snapping off for the drag (preview hidden, drop leaves it alone)
+drag start ──► app on the ignore list (bundle ID)? no preview, no snap, no drag-away for this drag
 ```
+- During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again: there is no public way to map a window number to an AX element, so the app's standard windows are matched by frame. The snap is planned on the drop's screen only, so a window still mostly on the neighbouring display snaps where the preview showed it, and *Restore* goes back to the frame from before the drag, or from before the first snap if Mullion had already snapped the window. The main window is tried first, because a title-bar drag makes the dragged window main and a hidden native tab can share its frame; a timeout aborts the search instead of costing one per window.
+- macOS 15+ tiling: `SystemTilingCheck` only reads `com.apple.WindowManager` (`EnableTilingByEdgeDrag`, `EnableTopTilingByEdgeDrag`, `EnableTilingOptionAccelerator`; a missing key means on) and `TilingNoticeCoordinator` shows the notice once per launch (PRD §6.6). Mullion never writes these keys.
 - Hysteresis: once an area is entered, the cursor has to move 8 pt past the area's edge before it counts as having left. This prevents flicker at boundaries.
-- The overlay is one `NSPanel` per screen with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient]`. Panels are created lazily and reused.
+- The overlay is one `NSPanel` per screen, created or updated when a window drag starts (so the first preview appears within a frame) and dropped for displays that are gone, with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]`. Panels are reused across drags. A fade-out only orders its panel out if no fade started after it.
 
 ## 7. Concurrency model
 - `@MainActor`: UI, menu, overlay, `ActionDispatcher` state.

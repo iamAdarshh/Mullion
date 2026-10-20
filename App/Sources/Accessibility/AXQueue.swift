@@ -17,6 +17,10 @@ actor AXQueue: WindowControlling {
         try AXWindow.focusedWindow(pid: pid).map { WindowRef(element: $0, pid: pid) }
     }
 
+    func window(pid: pid_t, matching frame: CGRect, tolerance: CGFloat) throws -> WindowRef? {
+        try AXWindow.window(pid: pid, matching: frame, tolerance: tolerance).map { WindowRef(element: $0, pid: pid) }
+    }
+
     func frame(of window: WindowRef) throws -> CGRect {
         try AXWindow.frame(of: window.element)
     }

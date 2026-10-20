@@ -46,6 +46,18 @@ enum Screens {
         screen("portraitRight", CGRect(x: 1470, y: -482, width: 1080, height: 1920), scale: 1),
     ]
 
+    /// Portrait 1× display to the left of the laptop (negative AX x and y).
+    static let portraitLeftOfPrimary = [
+        macBookAir13,
+        screen("portraitLeft", CGRect(x: -1080, y: -482, width: 1080, height: 1920), scale: 1),
+    ]
+
+    /// Ultrawide 1× display to the left of the laptop (negative AX x and y).
+    static let ultrawideLeftOfPrimary = [
+        macBookAir13,
+        screen("ultrawideLeft", CGRect(x: -3440, y: -242, width: 3440, height: 1440), scale: 1),
+    ]
+
     /// Studio Display left of the laptop (negative AX x), portrait display on the right.
     static let threeDisplays = [
         macBookAir13,
@@ -55,11 +67,23 @@ enum Screens {
 
     static let arrangements: [[ScreenGeometry]] = [
         [macBookAir13], [macBookAir13DockLeft], [studioDisplay], [ultrawide], [portrait1080],
-        laptopLeftOfExternal, externalAbovePrimary, portraitRightOfPrimary, threeDisplays,
+        laptopLeftOfExternal, externalAbovePrimary, portraitRightOfPrimary, portraitLeftOfPrimary,
+        ultrawideLeftOfPrimary,
+        threeDisplays,
     ]
 
     /// Every screen of every arrangement, including non-primary screens left of and above the primary.
-    static let all: [ScreenGeometry] = arrangements.flatMap(\.self)
+    /// Each screen appears once, so parameterised tests don't repeat identical cases.
+    static let all: [ScreenGeometry] = {
+        var seen = Set<String>()
+        return arrangements.flatMap(\.self).filter { seen.insert($0.id).inserted }
+    }()
+
+    /// Every landscape screen: these split the bottom edge into thirds for drag-to-snap.
+    static let landscape = all.filter { !$0.isPortrait }
+
+    /// Every ultrawide screen (21:9 or wider): these split the top edge into sixths for drag-to-snap.
+    static let ultrawideScreens = all.filter { $0.frame.width / $0.frame.height >= 21 / 9 }
 
     // MARK: Helpers
 

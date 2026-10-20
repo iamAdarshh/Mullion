@@ -38,12 +38,12 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 **Exit criteria:** PRD AC-1 to AC-4 pass, and the test-matrix rows tagged `M1` pass on a laptop alone and on a laptop with one external display.
 
 ## M2: Drag to snap
-- [ ] Mouse monitor (`NSEvent` global monitor) and window-move detection
-- [ ] Snap-area engine in `MullionCore` with hysteresis (pure and unit-tested)
-- [ ] Preview overlay panel, one per screen, with reduced-motion support
-- [ ] ⌥ to disable snapping, and the ignore list
-- [ ] Restore size when dragging a snapped window away
-- [ ] Detection of the Sequoia tiling conflict and the notice (PRD §6.6)
+- [x] Mouse monitor (`NSEvent` global monitor) and window-move detection
+- [x] Snap-area engine in `MullionCore` with hysteresis (pure and unit-tested)
+- [x] Preview overlay panel, one per screen, with reduced-motion support
+- [x] ⌥ to disable snapping, and the ignore list
+- [x] Restore size when dragging a snapped window away
+- [x] Detection of the Sequoia tiling conflict and the notice (PRD §6.6)
 
 **Exit criteria:** AC-5 and AC-6 pass, and the `M2` test-matrix rows pass, including a vertical display and an ultrawide (simulated with BetterDisplay or a real monitor).
 

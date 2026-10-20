@@ -1,4 +1,5 @@
 import ApplicationServices
+import MullionCore
 
 /// Synchronous Accessibility calls on windows (ARCHITECTURE §5).
 ///
@@ -16,21 +17,45 @@ enum AXWindow {
     /// The focused standard window of the app with `pid`. `nil` when the app has no focused window,
     /// or it is the desktop, a full-screen window, or a non-standard window such as a panel (AC-3, AC-4).
     static func focusedWindow(pid: pid_t) throws -> AXUIElement? {
-        let app = application(pid)
-        let value: CFTypeRef
-        do {
-            value = try copyAttribute(app, kAXFocusedWindowAttribute)
-        } catch AXWindowError.attributeUnavailable {
-            return nil
-        }
-        let window = try element(from: value)
-        setTimeout(window)
+        try standardWindow(application(pid), kAXFocusedWindowAttribute)
+    }
 
-        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return nil }
-        if (try? bool(window, fullScreenAttribute)) == true {
-            return nil
+    /// The standard window of the app with `pid` that the user just dropped, found by its frame: the
+    /// window server knows where it is, but there is no public way to turn its window number into an AX
+    /// element (ADR-0003).
+    ///
+    /// 1. The main window, if its frame is within `tolerance` of `frame`. Dragging a window by its title
+    ///    bar makes it the main window, so this is almost always the one, in one or two calls. It also
+    ///    wins over a hidden native tab or another window at exactly the same frame.
+    /// 2. Otherwise the first other standard window whose frame matches (a ⌘-drag of a background window).
+    /// 3. Otherwise the main window if it has the same size and is within `nudgeTolerance` of the drop:
+    ///    some apps nudge their window after a drop. Never a main window elsewhere on screen, which would
+    ///    snap a window the user didn't drag.
+    ///
+    /// - Throws: `AXWindowError.appNotResponding` as soon as any read times out, so a busy app costs one
+    ///   timeout rather than one per window, and the caller can ask again.
+    static func window(pid: pid_t, matching frame: CGRect, tolerance: CGFloat) throws -> AXUIElement? {
+        let app = application(pid)
+        let main = try standardWindow(app, kAXMainWindowAttribute)
+        let mainFrame = try main.flatMap { try readableFrame(of: $0) }
+        if let main, let mainFrame, mainFrame.isApproximatelyEqual(to: frame, tolerance: tolerance) {
+            return main
         }
-        return window
+        for window in try windows(of: app) where main.map({ !CFEqual($0, window) }) ?? true {
+            guard let candidate = try readableFrame(of: window),
+                  candidate.isApproximatelyEqual(to: frame, tolerance: tolerance),
+                  isStandard(window)
+            else { continue }
+            return window
+        }
+        if let main, let mainFrame, isNudged(mainFrame, from: frame, tolerance: tolerance) {
+            return main
+        }
+        Log.ax.debug("""
+        No AX window at the drop \(String(describing: frame), privacy: .public); \
+        main: \(String(describing: mainFrame), privacy: .public)
+        """)
+        return nil
     }
 
     /// The window's frame in AX space.
@@ -108,6 +133,63 @@ enum AXWindow {
     }
 
     // MARK: Private
+
+    /// The window in `attribute` of `app` (main or focused), if it is a standard window.
+    private static func standardWindow(_ app: AXUIElement, _ attribute: String) throws -> AXUIElement? {
+        let value: CFTypeRef
+        do {
+            value = try copyAttribute(app, attribute)
+        } catch AXWindowError.attributeUnavailable {
+            return nil
+        }
+        let window = try element(from: value)
+        setTimeout(window)
+        return isStandard(window) ? window : nil
+    }
+
+    /// Every window of `app`, with the messaging timeout set.
+    private static func windows(of app: AXUIElement) throws -> [AXUIElement] {
+        let value: CFTypeRef
+        do {
+            value = try copyAttribute(app, kAXWindowsAttribute)
+        } catch AXWindowError.attributeUnavailable {
+            return []
+        }
+        guard let items = value as? [CFTypeRef] else { throw AXWindowError.unexpectedValueType }
+        return items.compactMap { item in
+            guard let window = try? element(from: item) else { return nil }
+            setTimeout(window)
+            return window
+        }
+    }
+
+    /// The window's frame, or `nil` when this one window can't say (it closed, or has no frame).
+    /// Rethrows a timeout or a revoked trust: every further call would fail the same way.
+    private static func readableFrame(of window: AXUIElement) throws -> CGRect? {
+        do {
+            return try frame(of: window)
+        } catch let error as AXWindowError where error == .appNotResponding || error == .notTrusted {
+            throw error
+        } catch {
+            return nil
+        }
+    }
+
+    /// How far an app may nudge its window after a drop and still be the window that was dropped.
+    static let nudgeTolerance: CGFloat = 30
+
+    /// Whether `window` is the dropped window at `frame`, moved a little by its app: the same size,
+    /// within `tolerance`, and an origin within `nudgeTolerance`.
+    static func isNudged(_ window: CGRect, from frame: CGRect, tolerance: CGFloat) -> Bool {
+        abs(window.width - frame.width) <= tolerance && abs(window.height - frame.height) <= tolerance
+            && hypot(window.minX - frame.minX, window.minY - frame.minY) <= nudgeTolerance
+    }
+
+    /// A standard window that isn't full screen: the only kind Mullion moves (AC-3).
+    private static func isStandard(_ window: AXUIElement) -> Bool {
+        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return false }
+        return (try? bool(window, fullScreenAttribute)) != true
+    }
 
     private static func application(_ pid: pid_t) -> AXUIElement {
         let app = AXUIElementCreateApplication(pid)

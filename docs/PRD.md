@@ -74,10 +74,10 @@ If the user triggers the same half action twice in a row on the same window, and
 
 ### 6.3 Restore
 - Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
-- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position restores its original *size* under the cursor (the same behaviour as Magnet and Windows).
+- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding ⌥ or an ignored app leaves it alone. On by default (Settings → General, M3).
 
 ### 6.4 Drag to snap
-- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect. Releasing the mouse applies the action; moving out of the area hides the preview.
+- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect, in the accent colour and with gaps applied, exactly as the shortcut would place it. Releasing the mouse applies the action on the display the preview was on; moving out of the area hides the preview.
 - Default snap areas:
 
 | Area | Action |
@@ -90,9 +90,15 @@ If the user triggers the same half action twice in a row on the same window, and
 | Ultrawide displays (aspect ratio ≥ 21:9), top edge split into thirds | Top sixths (top centre remains Maximize) |
 
 - The area thickness is 5 pt for edges and 20 pt for corners (both configurable).
+- On a portrait display the bottom edge snaps to the Bottom Half, because thirds run top to bottom there.
+- An edge shared with another display is still a snap area on each side; the cursor passes through it on the way to the other display. A drop inside it, or less than 8 pt past it (hysteresis), snaps on the display the area belongs to.
 - Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
 - Holding **⌥ while dragging** temporarily disables snapping.
-- Apps on the ignore list never snap.
+- Windows of apps on the ignore list never snap when dragged. Keyboard shortcuts and menu actions still work on them, because those are a deliberate request for the frontmost window. The menu's **Ignore [frontmost app]** item adds the app to the list, and choosing it again (it shows a checkmark) takes it off.
+- Known limitations (v1):
+  - Dialogs and floating panels show a preview but don't snap at the drop: Mullion only moves standard windows, and during the drag it can't tell them apart.
+  - A tab torn off into a new window (Safari, Chrome) doesn't snap: the window being dragged is new, and the window that was clicked never moves.
+  - While Mullion itself is the active app (its welcome window is in front), pressing or releasing ⌥ only takes effect on the next mouse movement.
 - AC-5: The preview appears within 1 frame (under 16 ms) of entering an area and never flickers when hovering on the boundary between two areas (use hysteresis).
 - AC-6: Snapping works on every connected display, including a display placed above or below the main display.
 
@@ -102,8 +108,9 @@ If the user triggers the same half action twice in a row on the same window, and
 - Up to 6 displays are supported and tested. More may work.
 
 ### 6.6 macOS tiling conflict (Sequoia 15+)
-- On launch, and when Settings opens, Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag` and `EnableTopTilingByEdgeDrag`.
-- If either is enabled and drag-to-snap is on, Mullion shows a one-time notice with **Open Desktop & Dock settings** and **Don't show again** buttons. Mullion never writes these preferences itself.
+- At launch, once Accessibility is granted (and, from M3, when Settings opens), Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag`, `EnableTopTilingByEdgeDrag` and `EnableTilingOptionAccelerator`. The last one ("Hold ⌥ key while dragging windows to tile", on by default) makes ⌥ hand a drag to the system tiler, which clashes with ⌥ disabling Mullion's snapping, so the notice mentions it too.
+- A key that is missing means the user never changed it, so it has its macOS default (on). Before macOS 15 there is no system tiling and nothing is read.
+- If any is enabled and drag-to-snap is on, Mullion shows a notice at most once per launch, and only once Accessibility is granted, so it never covers the welcome window. It names the macOS settings to turn off and has **Open Desktop & Dock Settings** and **Don't Show Again** buttons. *Don't Show Again* hides it for good; after *Open Desktop & Dock Settings*, the next launch checks again and stays quiet if tiling is now off. Mullion never writes these preferences itself.
 
 ### 6.7 Menu bar
 - A template icon (monochrome, shaped like a mullion window glyph).
@@ -131,7 +138,7 @@ If the user triggers the same half action twice in a row on the same window, and
 | NFR-1 | Under 50 ms from key press to window placed (p95, measured using a signpost) |
 | NFR-2 | Idle CPU about 0 % and under 40 MB RSS at idle |
 | NFR-3 | No network access in v1. The app is built with Hardened Runtime. |
-| NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion (the preview fades instead of animating). |
+| NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion: the drag preview still fades in and out, but jumps between snap areas instead of sliding. |
 | NFR-5 | Localisable from day one (String Catalog). Ships with English, and German as a stretch goal. |
 | NFR-6 | Crash-free: no force-unwraps on AX results, and every AX call handles errors |
 
