@@ -115,9 +115,11 @@ final class ActionDispatcher {
     /// busy in its window-drag loop and wouldn't answer. Windows Mullion never snapped cost no AX call.
     @discardableResult
     func restoreSize(ofDropped window: DroppedWindow, cursor: CGPoint) -> Task<Void, Never> {
-        guard restoresSizeOnDragAway(),
-              store.hasSnap(pid: window.pid, frameBeforeDrag: window.frameBeforeDrag)
-        else { return Task {} }
+        guard restoresSizeOnDragAway() else { return Task {} }
+        guard store.hasSnap(pid: window.pid, frameBeforeDrag: window.frameBeforeDrag) else {
+            Log.drag.debug("Drag-away: the window wasn't at a Mullion snap when the drag began")
+            return Task {}
+        }
         return enqueue(Request(
             name: "restoreSizeAfterDrag",
             findWindow: { [weak self] in try await self?.droppedWindow(window) },
@@ -185,7 +187,10 @@ final class ActionDispatcher {
     private func apply(_ request: Request, to window: WindowRef) async throws {
         let current = try await windows.frame(of: window)
         let originalFrame = request.restoreFrame ?? current
-        guard let plan = request.plan(store.context(for: window, frame: current)) else { return }
+        guard let plan = request.plan(store.context(for: window, frame: current)) else {
+            Log.layout.debug("\(request.name, privacy: .public): nothing to do")
+            return
+        }
 
         var moved = false
         let actual: CGRect
@@ -203,6 +208,7 @@ final class ActionDispatcher {
             throw error
         }
 
+        Log.layout.debug("\(request.name, privacy: .public): moved to \(String(describing: actual), privacy: .public)")
         if request.forgetsWindow {
             store.forget(window)
         } else {
