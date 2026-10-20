@@ -102,11 +102,13 @@ Finding the focused window: `AXUIElementCreateApplication(frontmostApp.pid)`, th
 ```
 leftMouseDown ──► remember the press point (no window lookup yet)
 leftMouseDragged
-   ├─ after 4 pt: window under the press point, from CGWindowList (number, pid, bounds)
+   ├─ after 4 pt: window under the cursor, from CGWindowList (number, pid, bounds); the window has
+   │  already followed the cursor, so the press point may no longer be over it
    ├─ until it moves: has its origin moved with the same size? not within 30 pt → ignore this drag
    │  (text selection, scrollbars, resizing)
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
+mouseMoved with no button held (watched only during a window drag) ──► release was missed: cancel
 leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
 ```
 - During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again.

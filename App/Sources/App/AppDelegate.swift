@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tracker.onMoveStarted = { [weak snapper] _, cursor in snapper?.dragStarted(at: cursor) }
         tracker.onMoved = { [weak snapper] _, cursor in snapper?.dragMoved(to: cursor) }
         tracker.onEnded = { [weak snapper] _, cursor in snapper?.dragEnded(at: cursor) }
+        tracker.onCancelled = { [weak snapper] _ in snapper?.dragCancelled() }
         return (DragMonitor(tracker: tracker), snapper)
     }
 

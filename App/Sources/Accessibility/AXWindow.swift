@@ -25,40 +25,12 @@ enum AXWindow {
         }
         let window = try element(from: value)
         setTimeout(window)
-        return isStandard(window) ? window : nil
-    }
 
-    /// The standard window under `point` (AX space) and its app's pid, for drag-to-snap (PRD §6.4).
-    /// `nil` over the desktop, the menu bar, the Dock, a panel or a full-screen window.
-    static func window(at point: CGPoint) throws -> (element: AXUIElement, pid: pid_t)? {
-        let systemWide = AXUIElementCreateSystemWide()
-        // On the system-wide element this sets the default timeout for every element without its own.
-        setTimeout(systemWide)
-        var hit: AXUIElement?
-        do {
-            try AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &hit).check()
-        } catch AXWindowError.attributeUnavailable {
+        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return nil }
+        if (try? bool(window, fullScreenAttribute)) == true {
             return nil
         }
-        guard let hit else { return nil }
-        setTimeout(hit)
-
-        let window: AXUIElement
-        if (try? string(hit, kAXRoleAttribute)) == kAXWindowRole {
-            window = hit
-        } else {
-            do {
-                window = try element(from: copyAttribute(hit, kAXWindowAttribute))
-            } catch AXWindowError.attributeUnavailable {
-                return nil
-            }
-            setTimeout(window)
-        }
-        guard isStandard(window) else { return nil }
-
-        var pid: pid_t = 0
-        try AXUIElementGetPid(window, &pid).check()
-        return (window, pid)
+        return window
     }
 
     /// The window's frame in AX space.
@@ -136,13 +108,6 @@ enum AXWindow {
     }
 
     // MARK: Private
-
-    /// Only standard windows are moved: not panels, sheets or the desktop, and not full-screen windows
-    /// (AC-3, AC-4).
-    private static func isStandard(_ window: AXUIElement) -> Bool {
-        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return false }
-        return (try? bool(window, fullScreenAttribute)) != true
-    }
 
     private static func application(_ pid: pid_t) -> AXUIElement {
         let app = AXUIElementCreateApplication(pid)

@@ -58,11 +58,6 @@ actor FakeWindowController: WindowControlling {
         return focused
     }
 
-    /// The first live window whose frame contains `point`.
-    func window(at point: CGPoint) throws -> WindowRef? {
-        windows.first { $0.value.isAlive && $0.value.frame.contains(point) }?.key
-    }
-
     func frame(of window: WindowRef) throws -> CGRect {
         guard let fake = windows[window], fake.isAlive else { throw AXWindowError.elementGone }
         return fake.frame

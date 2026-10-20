@@ -31,10 +31,19 @@ struct DragSnapControllerTests {
         #expect(controller.dragEnded(at: CGPoint(x: 700, y: 400)) == nil)
     }
 
-    @Test func usesEveryConnectedScreen() {
-        let controller = makeController([FakeScreens.laptop, FakeScreens.externalRight])
+    @Test(arguments: [FakeScreens.externalRight, FakeScreens.externalAbove, FakeScreens.portraitLeft])
+    func snapsOnEveryConnectedScreen(other: ScreenGeometry) {
+        let controller = makeController([FakeScreens.laptop, other])
         controller.dragStarted(at: CGPoint(x: 700, y: 400))
-        controller.dragMoved(to: CGPoint(x: 4029, y: 400))
-        #expect(controller.match?.screen.id == "externalRight")
+        controller.dragMoved(to: CGPoint(x: other.frame.minX + 1, y: other.frame.midY))
+        #expect(controller.match?.action == .leftHalf)
+        #expect(controller.match?.screen.id == other.id)
+    }
+
+    @Test func cancellingForgetsTheArea() {
+        let controller = makeController()
+        controller.dragStarted(at: CGPoint(x: 1, y: 400))
+        controller.dragCancelled()
+        #expect(controller.match == nil)
     }
 }

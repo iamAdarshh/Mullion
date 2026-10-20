@@ -31,6 +31,12 @@ final class DragSnapController {
         Log.drag.debug("Snap area: \(next.map(\.action.rawValue) ?? "none", privacy: .public)")
     }
 
+    /// Forgets the drag without a drop.
+    func dragCancelled() {
+        match = nil
+        dragScreens = []
+    }
+
     /// Ends the drag and returns the area it ended in.
     @discardableResult
     func dragEnded(at cursor: CGPoint) -> SnapMatch? {
