@@ -55,6 +55,11 @@ final class RestoreStore {
         }
     }
 
+    /// The frames the app's windows were last snapped to, for diagnostics.
+    func snapFrames(pid: pid_t) -> [CGRect] {
+        entries.compactMap { window, entry in window.pid == pid ? entry.lastSnap?.frame : nil }
+    }
+
     /// Forgets a window, after it was restored or once it has closed.
     func forget(_ window: WindowRef) {
         entries[window] = nil
