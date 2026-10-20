@@ -90,6 +90,8 @@ If the user triggers the same half action twice in a row on the same window, and
 | Ultrawide displays (aspect ratio ≥ 21:9), top edge split into thirds | Top sixths (top centre remains Maximize) |
 
 - The area thickness is 5 pt for edges and 20 pt for corners (both configurable).
+- On a portrait display the bottom edge snaps to the Bottom Half, because thirds run top to bottom there.
+- An edge shared with another display is still a snap area on each side; the cursor passes through it on the way to the other display, and only a drop inside it snaps.
 - Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
 - Holding **⌥ while dragging** temporarily disables snapping.
 - Apps on the ignore list never snap.
