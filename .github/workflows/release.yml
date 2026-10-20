@@ -1,0 +1,104 @@
+name: Release
+
+# Builds a release from a version tag and creates a DRAFT GitHub Release with the DMG, a ZIP and
+# checksums. You review the draft and click Publish yourself (docs/RELEASING.md).
+#
+#   git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 45
+    # Runs only after you approve it (environment protection, set up by scripts/protect-repo.sh).
+    # Signing and notarization secrets go in this environment, never in repo-wide secrets.
+    environment: release
+    permissions:
+      contents: write # create the draft release and upload its files
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Work out the version
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"                 # 0.2.0-beta.1
+          base="${version%%-*}"              # 0.2.0
+          marketing="$(sed -n 's/^MARKETING_VERSION *= *//p' Config/Base.xcconfig)"
+          if [ "$base" != "$marketing" ]; then
+            echo "::error::Tag $tag doesn't match MARKETING_VERSION $marketing in Config/Base.xcconfig"
+            exit 1
+          fi
+          prerelease=false
+          case "$version" in *-*) prerelease=true ;; esac
+          {
+            echo "version=$version"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/       { exit }
+            found                   { print }
+          ' CHANGELOG.md > build-notes.md
+          if [ ! -s build-notes.md ]; then
+            echo "::error::No '## [$VERSION]' section in CHANGELOG.md"
+            exit 1
+          fi
+          cat >> build-notes.md <<'EOF'
+
+          ### Install
+          Download the `.dmg`, drag Mullion to Applications, open it and grant Accessibility access.
+
+          > This build is not notarized, so macOS blocks it on first launch. Open it once, then go to
+          > System Settings → Privacy & Security and click **Open Anyway**. Or run
+          > `xattr -dr com.apple.quarantine /Applications/Mullion.app`.
+          > After updating, you may need to turn Mullion off and on again under
+          > Privacy & Security → Accessibility.
+          EOF
+
+      - name: Install tools
+        run: brew install xcodegen
+
+      - name: Run tests
+        run: make test
+
+      - name: Build Mullion.app
+        run: make archive
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          make dmg RELEASE_VERSION="$VERSION"
+          ditto -c -k --keepParent build/Mullion.app "build/Mullion-$VERSION.zip"
+          cd build
+          shasum -a 256 "Mullion-$VERSION.dmg" "Mullion-$VERSION.zip" > checksums.txt
+          cat checksums.txt
+          printf '\nSHA-256:\n```\n%s\n```\n' "$(cat checksums.txt)" >> ../build-notes.md
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          flags=(--draft --verify-tag --title "Mullion $VERSION" --notes-file build-notes.md)
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}" \
+            "build/Mullion-$VERSION.dmg" "build/Mullion-$VERSION.zip" build/checksums.txt
