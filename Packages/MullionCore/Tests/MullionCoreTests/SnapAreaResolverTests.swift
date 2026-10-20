@@ -77,80 +77,131 @@ struct SnapAreaResolverTests {
 
     // MARK: Hysteresis (AC-5)
 
-    @Test func anAreaIsKeptUntilTheCursorIsEightPointsPastIt() {
-        let screens = [Screens.macBookAir13]
-        let left = resolve(CGPoint(x: 1, y: 400), on: screens)
-        #expect(resolve(CGPoint(x: 12.5, y: 400), on: screens, previous: left)?.area == .left)
-        #expect(resolve(CGPoint(x: 13, y: 400), on: screens, previous: left) == nil)
+    @Test(arguments: Screens.all)
+    func anAreaIsKeptUntilTheCursorIsEightPointsPastIt(screen: ScreenGeometry) {
+        let frame = screen.frame
+        let left = resolve(CGPoint(x: frame.minX + 1, y: frame.midY), on: [screen])
+        #expect(resolve(CGPoint(x: frame.minX + 12.5, y: frame.midY), on: [screen], previous: left)?.area == .left)
+        #expect(resolve(CGPoint(x: frame.minX + 13, y: frame.midY), on: [screen], previous: left) == nil)
     }
 
-    @Test func theCornerAndEdgeBoundaryDoesNotFlicker() {
-        let screens = [Screens.macBookAir13]
-        let corner = resolve(CGPoint(x: 1, y: 10), on: screens)
+    @Test(arguments: Screens.all)
+    func theCornerAndEdgeBoundaryDoesNotFlicker(screen: ScreenGeometry) {
+        let screens = [screen]
+        let x = screen.frame.minX + 1
+        let top = screen.frame.minY
+        let corner = resolve(CGPoint(x: x, y: top + 10), on: screens)
         #expect(corner?.area == .topLeft)
         // Just past the corner: still the corner, so a cursor wobbling on the line doesn't flicker.
-        let wobble = resolve(CGPoint(x: 1, y: 22), on: screens, previous: corner)
+        let wobble = resolve(CGPoint(x: x, y: top + 22), on: screens, previous: corner)
         #expect(wobble?.area == .topLeft)
-        let edge = resolve(CGPoint(x: 1, y: 28), on: screens, previous: wobble)
+        let edge = resolve(CGPoint(x: x, y: top + 28), on: screens, previous: wobble)
         #expect(edge?.area == .left)
         // And back again: the edge holds for 8 pt into the corner.
-        #expect(resolve(CGPoint(x: 1, y: 13), on: screens, previous: edge)?.area == .left)
-        #expect(resolve(CGPoint(x: 1, y: 11), on: screens, previous: edge)?.area == .topLeft)
+        #expect(resolve(CGPoint(x: x, y: top + 13), on: screens, previous: edge)?.area == .left)
+        #expect(resolve(CGPoint(x: x, y: top + 11), on: screens, previous: edge)?.area == .topLeft)
     }
 
-    @Test func hysteresisDoesNotCrossToAnotherScreen() {
+    @Test func anAreaIsKeptAcrossASharedEdgeBetweenDisplaysSideBySide() {
         let screens = Screens.laptopLeftOfExternal
         let right = resolve(CGPoint(x: 1469, y: 400), on: screens)
-        let next = resolve(CGPoint(x: 1471, y: 400), on: screens, previous: right)
-        #expect(next?.screen.id == "studioRight")
-        #expect(next?.area == .left)
+        let wobble = resolve(CGPoint(x: 1470, y: 400), on: screens, previous: right)
+        #expect(wobble?.area == .right)
+        #expect(wobble?.screen.id == "macBookAir13")
+        #expect(resolve(CGPoint(x: 1477.5, y: 400), on: screens, previous: wobble)?.area == .right)
+        // 8 pt into the external display the laptop's area is gone, and that spot is no area there.
+        let gone = resolve(CGPoint(x: 1478, y: 400), on: screens, previous: wobble)
+        #expect(gone == nil)
+        // Coming back to the external display's edge from inside it snaps there.
+        let left = resolve(CGPoint(x: 1471, y: 400), on: screens, previous: gone)
+        #expect(left?.area == .left)
+        #expect(left?.screen.id == "studioRight")
+    }
+
+    @Test func anAreaIsKeptAcrossASharedEdgeBetweenDisplaysAboveAndBelow() {
+        let screens = Screens.externalAbovePrimary
+        let top = resolve(CGPoint(x: 735, y: 1), on: screens)
+        let wobble = resolve(CGPoint(x: 735, y: -1), on: screens, previous: top)
+        #expect(wobble?.action == .maximize)
+        #expect(wobble?.screen.id == "macBookAir13")
+        #expect(resolve(CGPoint(x: 735, y: -9), on: screens, previous: wobble) == nil)
+
+        let above = resolve(CGPoint(x: 735, y: -1), on: screens)
+        let downward = resolve(CGPoint(x: 735, y: 1), on: screens, previous: above)
+        #expect(downward?.action == .centerThird)
+        #expect(downward?.screen.id == "studioAbove")
     }
 
     // MARK: Bottom thirds
 
-    @Test(arguments: [(200.0, WindowAction.firstThird), (735, .centerThird), (1270, .lastThird)])
-    func theBottomEdgeIsSplitIntoThirds(x: CGFloat, action: WindowAction) {
-        #expect(resolve(CGPoint(x: x, y: 955), on: [Screens.macBookAir13])?.action == action)
+    @Test(arguments: Screens.landscape)
+    func theBottomEdgeIsSplitIntoThirds(screen: ScreenGeometry) {
+        let actions: [WindowAction] = [.firstThird, .centerThird, .lastThird]
+        for (index, action) in actions.enumerated() {
+            #expect(resolve(bottom(of: screen, at: (CGFloat(index) * 2 + 1) / 6), on: [screen])?.action == action)
+        }
     }
 
-    @Test func slidingIntoTheNextThirdGivesTwoThirds() {
-        let screens = [Screens.macBookAir13]
-        let first = resolve(CGPoint(x: 200, y: 955), on: screens)
-        let slid = resolve(CGPoint(x: 600, y: 955), on: screens, previous: first)
+    @Test(arguments: Screens.landscape)
+    func slidingIntoTheNextThirdGivesTwoThirds(screen: ScreenGeometry) {
+        let screens = [screen]
+        let first = resolve(bottom(of: screen, at: 1 / 6), on: screens)
+        let slid = resolve(bottom(of: screen, at: 1 / 2), on: screens, previous: first)
         #expect(slid?.action == .firstTwoThirds)
         // Back into the starting third: a single third again.
-        #expect(resolve(CGPoint(x: 200, y: 955), on: screens, previous: slid)?.action == .firstThird)
+        #expect(resolve(bottom(of: screen, at: 1 / 6), on: screens, previous: slid)?.action == .firstThird)
         // On into the far third: the two thirds the cursor is now sliding between.
-        #expect(resolve(CGPoint(x: 1270, y: 955), on: screens, previous: slid)?.action == .lastTwoThirds)
+        #expect(resolve(bottom(of: screen, at: 5 / 6), on: screens, previous: slid)?.action == .lastTwoThirds)
     }
 
-    @Test(arguments: [(200.0, WindowAction.firstTwoThirds), (1270, .lastTwoThirds)])
-    func slidingOutOfTheCenterThirdGivesTwoThirds(x: CGFloat, action: WindowAction) {
-        let screens = [Screens.macBookAir13]
-        let center = resolve(CGPoint(x: 735, y: 955), on: screens)
-        #expect(resolve(CGPoint(x: x, y: 955), on: screens, previous: center)?.action == action)
+    @Test(arguments: Screens.landscape)
+    func slidingOutOfTheCenterThirdGivesTwoThirds(screen: ScreenGeometry) {
+        let screens = [screen]
+        let center = resolve(bottom(of: screen, at: 1 / 2), on: screens)
+        #expect(resolve(bottom(of: screen, at: 1 / 6), on: screens, previous: center)?.action == .firstTwoThirds)
+        #expect(resolve(bottom(of: screen, at: 5 / 6), on: screens, previous: center)?.action == .lastTwoThirds)
     }
 
-    @Test func aBoundaryBetweenThirdsHasHysteresis() {
-        let screens = [Screens.macBookAir13]
-        let first = resolve(CGPoint(x: 400, y: 955), on: screens)
-        #expect(resolve(CGPoint(x: 497, y: 955), on: screens, previous: first)?.action == .firstThird)
+    @Test(arguments: Screens.landscape)
+    func aBoundaryBetweenThirdsHasHysteresis(screen: ScreenGeometry) {
+        let screens = [screen]
+        let boundary = screen.frame.minX + screen.frame.width / 3
+        let y = screen.frame.maxY - 1
+        let first = resolve(CGPoint(x: boundary - 90, y: y), on: screens)
+        #expect(resolve(CGPoint(x: boundary + 7, y: y), on: screens, previous: first)?.action == .firstThird)
+        #expect(resolve(CGPoint(x: boundary + 8, y: y), on: screens, previous: first)?.action == .firstTwoThirds)
     }
 
-    @Test func portraitScreensSnapTheBottomEdgeToTheBottomHalf() {
-        let screen = Screens.portrait1080
-        #expect(resolve(CGPoint(x: 540, y: 1919), on: [screen])?.action == .bottomHalf)
+    @Test(arguments: Screens.all.filter(\.isPortrait))
+    func portraitScreensSnapTheBottomEdgeToTheBottomHalf(screen: ScreenGeometry) {
+        #expect(resolve(bottom(of: screen, at: 1 / 2), on: [screen])?.action == .bottomHalf)
+    }
+
+    @Test func onlyNeighbouringThirdsCanBeSlidBetween() {
+        #expect(BottomSlide(from: .first, to: .last) == nil)
+        #expect(BottomSlide(from: .center, to: .center) == nil)
+        #expect(BottomSlide(from: .last, to: .center)?.start == .last)
+        #expect(BottomSlide(from: .last, to: .center)?.current == .center)
     }
 
     // MARK: Ultrawide
 
-    @Test(arguments: [(600.0, WindowAction.topLeftSixth), (1720, .maximize), (2840, .topRightSixth)])
-    func ultrawideTopEdgeIsSplitIntoSixthsAndMaximize(x: CGFloat, action: WindowAction) {
-        #expect(resolve(CGPoint(x: x, y: 1), on: [Screens.ultrawide])?.action == action)
+    @Test(arguments: Screens.ultrawideScreens)
+    func ultrawideTopEdgeIsSplitIntoSixthsAndMaximize(screen: ScreenGeometry) {
+        let actions: [WindowAction] = [.topLeftSixth, .maximize, .topRightSixth]
+        for (index, action) in actions.enumerated() {
+            let point = CGPoint(
+                x: screen.frame.minX + screen.frame.width * (CGFloat(index) * 2 + 1) / 6,
+                y: screen.frame.minY + 1
+            )
+            #expect(resolve(point, on: [screen])?.action == action)
+        }
     }
 
-    @Test func ultrawideCornersAreStillQuarters() {
-        #expect(resolve(CGPoint(x: 1, y: 1), on: [Screens.ultrawide])?.action == .topLeft)
+    @Test(arguments: Screens.ultrawideScreens)
+    func ultrawideCornersAreStillQuarters(screen: ScreenGeometry) {
+        let point = CGPoint(x: screen.frame.minX + 1, y: screen.frame.minY + 1)
+        #expect(resolve(point, on: [screen])?.action == .topLeft)
     }
 
     @Test func aSixteenByNineScreenIsNotUltrawide() {
@@ -161,5 +212,10 @@ struct SnapAreaResolverTests {
 
     private func resolve(_ point: CGPoint, on screens: [ScreenGeometry], previous: SnapMatch? = nil) -> SnapMatch? {
         SnapAreaResolver.resolve(cursor: point, screens: screens, previous: previous)
+    }
+
+    /// A point 1 pt above the bottom of `screen`, `fraction` of the way across it.
+    private func bottom(of screen: ScreenGeometry, at fraction: CGFloat) -> CGPoint {
+        CGPoint(x: screen.frame.minX + screen.frame.width * fraction, y: screen.frame.maxY - 1)
     }
 }

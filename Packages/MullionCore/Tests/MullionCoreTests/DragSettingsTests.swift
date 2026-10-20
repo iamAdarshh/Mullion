@@ -17,4 +17,23 @@ struct DragSettingsTests {
     @Test func aCornerIsNeverThinnerThanAnEdge() {
         #expect(DragSettings(edgeThickness: 30, cornerSize: 10).cornerSize == 30)
     }
+
+    // Regression: setting one value used to recurse forever through the other's `didSet`.
+    @Test func changingTheEdgeThicknessClampsBothValues() {
+        var settings = DragSettings()
+        settings.edgeThickness = 30
+        #expect(settings.edgeThickness == 30)
+        #expect(settings.cornerSize == 30)
+        settings.edgeThickness = 99
+        #expect(settings.edgeThickness == 50)
+    }
+
+    @Test func changingTheCornerSizeClampsIt() {
+        var settings = DragSettings(edgeThickness: 10, cornerSize: 20)
+        settings.cornerSize = 4
+        #expect(settings.cornerSize == 10)
+        #expect(settings.edgeThickness == 10)
+        settings.cornerSize = 500
+        #expect(settings.cornerSize == 100)
+    }
 }

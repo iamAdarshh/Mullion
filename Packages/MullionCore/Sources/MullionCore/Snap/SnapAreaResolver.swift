@@ -4,28 +4,37 @@ import CoreGraphics
 public enum SnapAreaResolver {
     /// The area under `cursor`, or `nil` when it is in none.
     ///
-    /// - Parameter previous: The result for the last cursor position of this drag. Once the cursor is
-    ///   in an area it stays there until it is `DragSettings.hysteresis` past the area's edge, so a
-    ///   cursor wobbling on a boundary never flickers between areas (AC-5). It also tells a slide along
-    ///   the bottom edge from one third into the next, which snaps to two-thirds.
+    /// - Parameters:
+    ///   - cursor: Already converted to AX space with `CoordinateSpace`. Screen frames are half-open,
+    ///     so a point exactly on a screen's `maxX` or `maxY` belongs to no screen.
+    ///   - previous: The result for the last cursor position of this drag. Once the cursor is in an
+    ///     area it stays there until it is `DragSettings.hysteresis` past the area's edge, even when
+    ///     that is on a neighbouring display, so a cursor wobbling on a boundary never flickers between
+    ///     areas (AC-5). It also tells a slide along the bottom edge from one third into the next,
+    ///     which snaps to two-thirds.
     public static func resolve(
         cursor: CGPoint,
         screens: [ScreenGeometry],
         previous: SnapMatch?,
         settings: DragSettings = .defaults
     ) -> SnapMatch? {
-        guard let screen = screens.first(where: { $0.frame.contains(cursor) }) else { return nil }
-        let held = previous.flatMap { $0.screen.id == screen.id ? $0.area : nil }
-        let found = area(at: cursor, on: screen, settings: settings)
+        let screen = screens.first { $0.frame.contains(cursor) }
+        let found = screen.flatMap { screen in
+            area(at: cursor, on: screen, settings: settings).map { SnapMatch(area: $0, screen: screen) }
+        }
 
-        if let held, held != found {
+        // Use the held screen's current geometry: a display can change while the user drags.
+        if let previous, let heldScreen = screens.first(where: { $0.id == previous.screen.id }) {
+            let held = SnapMatch(area: previous.area, screen: heldScreen)
             let reach = -DragSettings.hysteresis
-            if hitRect(of: held, on: screen, settings: settings).insetBy(dx: reach, dy: reach).contains(cursor) {
-                return SnapMatch(area: held, screen: screen)
+            let holdRect = hitRect(of: held.area, on: heldScreen, settings: settings).insetBy(dx: reach, dy: reach)
+            if found != held, holdRect.contains(cursor) {
+                return held
             }
         }
         guard let found else { return nil }
-        return SnapMatch(area: slid(into: found, from: held), screen: screen)
+        let heldHere = previous.flatMap { $0.screen.id == found.screen.id ? $0.area : nil }
+        return SnapMatch(area: slid(into: found.area, from: heldHere), screen: found.screen)
     }
 
     // MARK: Private
@@ -34,7 +43,7 @@ public enum SnapAreaResolver {
     private static func areas(on screen: ScreenGeometry) -> [SnapArea] {
         let corners: [SnapArea] = [.topLeft, .topRight, .bottomLeft, .bottomRight]
         let top: [SnapArea] = isUltrawide(screen) ? [.topLeftSixth, .top, .topRightSixth] : [.top]
-        let bottom: [SnapArea] = screen.isPortrait ? [.bottom] : (0 ..< 3).map { .bottomThird($0) }
+        let bottom: [SnapArea] = screen.isPortrait ? [.bottom] : BottomThird.allCases.map { .bottomThird($0) }
         return corners + [.left, .right] + top + bottom
     }
 
@@ -74,7 +83,8 @@ public enum SnapAreaResolver {
         case .topLeftSixth: return column(0, of: topStrip)
         case .topRightSixth: return column(2, of: topStrip)
         case .bottom: return bottomStrip
-        case let .bottomThird(index), let .bottomTwoThirds(_, index): return column(index, of: bottomStrip)
+        case let .bottomThird(third): return column(third.rawValue, of: bottomStrip)
+        case let .bottomTwoThirds(slide): return column(slide.current.rawValue, of: bottomStrip)
         }
     }
 
@@ -83,10 +93,10 @@ public enum SnapAreaResolver {
     private static func slid(into found: SnapArea, from held: SnapArea?) -> SnapArea {
         guard case let .bottomThird(now) = found else { return found }
         switch held {
-        case let .bottomThird(before) where abs(before - now) == 1:
-            return .bottomTwoThirds(start: before, current: now)
-        case let .bottomTwoThirds(start, current) where now != start && now != current:
-            return .bottomTwoThirds(start: current, current: now)
+        case let .bottomThird(before):
+            return BottomSlide(from: before, to: now).map { .bottomTwoThirds($0) } ?? found
+        case let .bottomTwoThirds(slide) where now != slide.start:
+            return BottomSlide(from: slide.current, to: now).map { .bottomTwoThirds($0) } ?? found
         default:
             return found
         }

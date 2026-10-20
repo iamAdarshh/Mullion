@@ -6,10 +6,10 @@ public enum SnapArea: Hashable, Sendable {
     case bottom
     /// The outer thirds of an ultrawide screen's top edge. The middle third is `top`.
     case topLeftSixth, topRightSixth
-    /// One of the bottom edge's thirds, numbered 0…2 from the left.
-    case bottomThird(Int)
-    /// The cursor slid along the bottom edge from third `start` into the neighbouring third `current`.
-    case bottomTwoThirds(start: Int, current: Int)
+    /// One of the bottom edge's thirds.
+    case bottomThird(BottomThird)
+    /// The cursor slid along the bottom edge from one third into its neighbour.
+    case bottomTwoThirds(BottomSlide)
 
     /// The action a drop in this area applies.
     public var action: WindowAction {
@@ -24,8 +24,63 @@ public enum SnapArea: Hashable, Sendable {
         case .bottom: .bottomHalf
         case .topLeftSixth: .topLeftSixth
         case .topRightSixth: .topRightSixth
-        case let .bottomThird(index): [.firstThird, .centerThird, .lastThird][min(max(index, 0), 2)]
-        case let .bottomTwoThirds(start, current): min(start, current) == 0 ? .firstTwoThirds : .lastTwoThirds
+        case let .bottomThird(third): third.action
+        case let .bottomTwoThirds(slide): slide.action
+        }
+    }
+}
+
+/// A third of a screen's width, from the left.
+public enum BottomThird: Int, CaseIterable, Sendable {
+    case first, center, last
+
+    var action: WindowAction {
+        switch self {
+        case .first: .firstThird
+        case .center: .centerThird
+        case .last: .lastThird
+        }
+    }
+}
+
+/// A slide along the bottom edge between neighbouring thirds. Only neighbours can be slid between,
+/// so every case covers exactly two adjacent thirds.
+public enum BottomSlide: Sendable {
+    case firstToCenter, centerToFirst, centerToLast, lastToCenter
+
+    /// The slide from `start` into `current`, or `nil` unless they are neighbours.
+    public init?(from start: BottomThird, to current: BottomThird) {
+        switch (start, current) {
+        case (.first, .center): self = .firstToCenter
+        case (.center, .first): self = .centerToFirst
+        case (.center, .last): self = .centerToLast
+        case (.last, .center): self = .lastToCenter
+        default: return nil
+        }
+    }
+
+    /// The third the slide started in.
+    public var start: BottomThird {
+        switch self {
+        case .firstToCenter: .first
+        case .centerToFirst, .centerToLast: .center
+        case .lastToCenter: .last
+        }
+    }
+
+    /// The third the cursor is in now.
+    public var current: BottomThird {
+        switch self {
+        case .centerToFirst: .first
+        case .firstToCenter, .lastToCenter: .center
+        case .centerToLast: .last
+        }
+    }
+
+    var action: WindowAction {
+        switch self {
+        case .firstToCenter, .centerToFirst: .firstTwoThirds
+        case .centerToLast, .lastToCenter: .lastTwoThirds
         }
     }
 }
