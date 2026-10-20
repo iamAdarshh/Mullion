@@ -32,13 +32,17 @@ struct ListedWindow: Equatable, Sendable {
         self.alpha = alpha
     }
 
-    /// The window the user pressed on: the frontmost visible normal window under `point`.
+    /// The window the user pressed on: the frontmost visible normal window under any of `points`.
     ///
     /// - Parameters:
     ///   - windows: Front to back, as the window server lists them.
+    ///   - points: Where the window may be. The window just pressed on is in front of everything it
+    ///     overlaps, so the frontmost window under any of them is that one.
     ///   - ownPID: Mullion's pid. `nil` when Mullion's own window is in front, so it is never dragged.
-    static func frontmost(in windows: [ListedWindow], at point: CGPoint, excluding ownPID: pid_t) -> ListedWindow? {
-        guard let window = windows.first(where: { $0.layer == 0 && $0.alpha > 0 && $0.bounds.contains(point) })
+    static func frontmost(in windows: [ListedWindow], at points: [CGPoint], excluding ownPID: pid_t) -> ListedWindow? {
+        guard let window = windows.first(where: { window in
+            window.layer == 0 && window.alpha > 0 && points.contains { window.bounds.contains($0) }
+        })
         else { return nil }
         return window.pid == ownPID ? nil : window
     }

@@ -26,9 +26,9 @@ final class FakeWindowList: WindowListing {
         windows.removeAll { $0.id == id }
     }
 
-    func window(at point: CGPoint, excluding ownPID: pid_t) -> ListedWindow? {
+    func window(at points: [CGPoint], excluding ownPID: pid_t) -> ListedWindow? {
         reads += 1
-        return ListedWindow.frontmost(in: windows, at: point, excluding: ownPID)
+        return ListedWindow.frontmost(in: windows, at: points, excluding: ownPID)
     }
 
     func bounds(of id: CGWindowID) -> CGRect? {

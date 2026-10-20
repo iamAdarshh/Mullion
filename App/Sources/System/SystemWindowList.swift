@@ -6,10 +6,10 @@ import CoreGraphics
 /// owner, layer and bounds are read: no window titles, so no Screen Recording permission is needed.
 @MainActor
 struct SystemWindowList: WindowListing {
-    func window(at point: CGPoint, excluding ownPID: pid_t) -> ListedWindow? {
+    func window(at points: [CGPoint], excluding ownPID: pid_t) -> ListedWindow? {
         ListedWindow.frontmost(
             in: Self.list([.optionOnScreenOnly, .excludeDesktopElements], relativeTo: kCGNullWindowID),
-            at: point,
+            at: points,
             excluding: ownPID
         )
     }

@@ -53,6 +53,11 @@ final class DragTracker {
     /// otherwise leave the drag and its preview running until the next click, even if the user only
     /// types in the meantime. Holding the window still sends no events, so a timeout can't tell.
     private var buttonCheck: (any ScheduledTask)?
+    /// Checks in a row that found the button up. The button state changes the moment the user lets go,
+    /// but the release event reaches Mullion later: cancelling on the first such check could beat it
+    /// and lose the drop. By the second check, a release that really happened has arrived.
+    private var buttonUpChecks = 0
+    private static let buttonUpChecksToCancel = 2
 
     /// - Parameters:
     ///   - ownPID: Mullion's pid. Its own windows are never snapped.
@@ -86,10 +91,9 @@ final class DragTracker {
         switch phase {
         case let .pressed(press) where distance(press, point) >= Self.startDistance:
             let cursor = windowList.cursor() ?? point
-            // Under the cursor first; the press point as a fallback, in case the window lags the cursor.
-            let found = windowList.window(at: cursor, excluding: ownPID)
-                ?? windowList.window(at: press, excluding: ownPID)
-            if let window = found {
+            // Under the cursor, or at the press point in case the window lags the cursor. The window
+            // just pressed on is in front, so it wins over a window behind that only the cursor is over.
+            if let window = windowList.window(at: [cursor, press], excluding: ownPID) {
                 phase = .checking(window, press: press, readAt: cursor)
             } else {
                 phase = .ignored
@@ -97,6 +101,8 @@ final class DragTracker {
         case let .checking(window, press, readAt):
             check(window, press: press, readAt: readAt, cursor: point)
         case let .moving(window):
+            // A drag event means the button is held, whatever the last check read.
+            buttonUpChecks = 0
             onMoved?(window, point)
         default:
             break
@@ -134,8 +140,7 @@ final class DragTracker {
             let dragged = DraggedWindow(id: window.id, pid: window.pid, frameBeforeDrag: before)
             phase = .moving(dragged)
             buttonCheck = scheduler.schedule(every: Self.buttonCheckInterval, tolerance: 0.05) { [weak self] in
-                guard let self, !isLeftButtonDown() else { return }
-                cancel()
+                self?.checkButton()
             }
             Log.drag.debug("Window drag started")
             // Snap areas follow the event's position, like every later drag event.
@@ -145,10 +150,22 @@ final class DragTracker {
         }
     }
 
+    private func checkButton() {
+        guard !isLeftButtonDown() else {
+            buttonUpChecks = 0
+            return
+        }
+        buttonUpChecks += 1
+        if buttonUpChecks >= Self.buttonUpChecksToCancel {
+            cancel()
+        }
+    }
+
     private func becomeIdle() {
         phase = .idle
         buttonCheck?.cancel()
         buttonCheck = nil
+        buttonUpChecks = 0
     }
 
     /// Moved by at least a point, and kept its size: dragging the left edge to resize also moves the origin.
