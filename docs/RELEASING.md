@@ -13,8 +13,17 @@ Versioning follows [SemVer](https://semver.org). The tag format is `vMAJOR.MINOR
    - *Without:* nothing to do, because `make archive` already ad-hoc signs. Add the Gatekeeper note to the release notes.
 7. [ ] `make dmg`, which produces `build/Mullion-X.Y.Z.dmg` and prints its SHA-256. Record it. For a beta: `make dmg RELEASE_VERSION=X.Y.Z-beta.N`.
 8. [ ] Smoke test the DMG on a clean user account: install, grant Accessibility, try 3 shortcuts and 1 drag
-9. [ ] `git tag vX.Y.Z && git push --tags`, then create the GitHub Release with the DMG and the changelog section
+9. [ ] Tag and publish, preferably through CI (see below): `git tag vX.Y.Z && git push origin vX.Y.Z`
 10. [ ] Update the Homebrew cask (own tap `iamAdarshh/homebrew-tap` first; submit to `homebrew/cask` once the project meets its notability requirements)
+
+## Releasing through CI (preferred)
+Pushing a `v*` tag runs `.github/workflows/release.yml`, so the published files are built from exactly the tagged commit on a clean runner, not on your Mac.
+1. The workflow waits for your approval: *Actions → Release → Review deployments → release → Approve*. This is the `release` environment's protection (set up by `scripts/protect-repo.sh`), and it's where signing secrets will live once there is a Developer ID.
+2. It checks that the tag matches `MARKETING_VERSION` (a `-beta.N` suffix is allowed), runs the tests, then builds with `make archive` and `make dmg`. It also makes a ZIP (`ditto`, for Homebrew and future auto-updates) and `checksums.txt`.
+3. It creates a **draft** release. The notes are the matching `CHANGELOG.md` section plus the install note and the checksums, and tags with a `-` are marked as pre-releases.
+4. Download the DMG from the draft and smoke test it (step 8), then click **Publish release**.
+
+Steps 5–7 are still useful locally when you want to test a build before tagging.
 
 ## Release-note template
 ```markdown

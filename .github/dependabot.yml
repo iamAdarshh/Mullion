@@ -1,0 +1,19 @@
+# Keeps the GitHub Actions used in .github/workflows up to date, including their pinned commit SHAs.
+#
+# Not covered: KeyboardShortcuts. It is pinned in project.yml (XcodeGen), which Dependabot can't read,
+# and MullionCore/Package.swift has no dependencies. Watch its releases instead
+# (github.com/sindresorhus/KeyboardShortcuts → Watch → Custom → Releases) and bump it by hand (ADR-0005).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+    labels: [dependencies]

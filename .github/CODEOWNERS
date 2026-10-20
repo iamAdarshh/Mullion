@@ -1,0 +1,21 @@
+# Code owners are asked for review automatically and listed on every PR.
+# The last matching pattern wins, so the catch-all comes first.
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+*                       @iamAdarshh
+
+# Files that run code on a contributor's or the maintainer's machine, or in CI.
+# Read the diff on GitHub BEFORE checking out a PR that touches any of these:
+# Claude Code hooks and permissions run automatically, and make/xcodegen run project scripts.
+/.claude/               @iamAdarshh
+/CLAUDE.md              @iamAdarshh
+/REVIEW.md              @iamAdarshh
+/Makefile               @iamAdarshh
+/project.yml            @iamAdarshh
+/Config/                @iamAdarshh
+/scripts/               @iamAdarshh
+/.github/               @iamAdarshh
+
+# Entitlements and Info.plist decide what the shipped app is allowed to do.
+/App/Mullion.entitlements  @iamAdarshh
+/App/Info.plist            @iamAdarshh
