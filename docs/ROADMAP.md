@@ -40,7 +40,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 ## M2: Drag to snap
 - [x] Mouse monitor (`NSEvent` global monitor) and window-move detection
 - [x] Snap-area engine in `MullionCore` with hysteresis (pure and unit-tested)
-- [ ] Preview overlay panel, one per screen, with reduced-motion support
+- [x] Preview overlay panel, one per screen, with reduced-motion support
 - [ ] ⌥ to disable snapping, and the ignore list
 - [ ] Restore size when dragging a snapped window away
 - [ ] Detection of the Sequoia tiling conflict and the notice (PRD §6.6)

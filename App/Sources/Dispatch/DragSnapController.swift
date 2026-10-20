@@ -1,40 +1,55 @@
 import CoreGraphics
 import MullionCore
 
-/// Follows a window drag and works out which snap area the cursor is in (PRD §6.4).
+/// Follows a window drag, works out which snap area the cursor is in and previews where the window
+/// will go (PRD §6.4).
 ///
 /// The screens are read once when the drag starts, so a drag never rebuilds them on every mouse event.
 @MainActor
 final class DragSnapController {
     private let screens: any ScreenProviding
-    private let settings: () -> DragSettings
+    private let preview: any SnapPreviewing
+    private let dragSettings: () -> DragSettings
+    private let actionSettings: () -> ActionSettings
     private var dragScreens: [ScreenGeometry] = []
+    private var windowFrame = CGRect.zero
 
     /// The area under the cursor, or `nil` outside every area or when no window is being dragged.
     private(set) var match: SnapMatch?
 
-    init(screens: any ScreenProviding, settings: @escaping () -> DragSettings) {
+    init(
+        screens: any ScreenProviding,
+        preview: any SnapPreviewing,
+        dragSettings: @escaping () -> DragSettings,
+        actionSettings: @escaping () -> ActionSettings
+    ) {
         self.screens = screens
-        self.settings = settings
+        self.preview = preview
+        self.dragSettings = dragSettings
+        self.actionSettings = actionSettings
     }
 
-    func dragStarted(at cursor: CGPoint) {
+    /// - Parameter windowFrame: The dragged window's frame before the drag.
+    func dragStarted(windowFrame: CGRect, at cursor: CGPoint) {
         dragScreens = screens.screens
+        self.windowFrame = windowFrame
         match = nil
         dragMoved(to: cursor)
     }
 
     func dragMoved(to cursor: CGPoint) {
-        let next = SnapAreaResolver.resolve(cursor: cursor, screens: dragScreens, previous: match, settings: settings())
+        let next = SnapAreaResolver.resolve(
+            cursor: cursor, screens: dragScreens, previous: match, settings: dragSettings()
+        )
         guard next != match else { return }
         match = next
         Log.drag.debug("Snap area: \(next.map(\.action.rawValue) ?? "none", privacy: .public)")
+        showPreview()
     }
 
     /// Forgets the drag without a drop.
     func dragCancelled() {
-        match = nil
-        dragScreens = []
+        finish()
     }
 
     /// Ends the drag and returns the area it ended in.
@@ -42,9 +57,29 @@ final class DragSnapController {
     func dragEnded(at cursor: CGPoint) -> SnapMatch? {
         dragMoved(to: cursor)
         let result = match
-        match = nil
-        dragScreens = []
+        finish()
         Log.drag.debug("Window drag ended in \(result.map(\.action.rawValue) ?? "no area", privacy: .public)")
         return result
+    }
+
+    // MARK: Private
+
+    /// Previews the same rect the action would produce from a shortcut, gaps included (PRD §9 Q1).
+    private func showPreview() {
+        guard let match,
+              let rect = ActionCalculator.targetRect(
+                  for: match.action, window: windowFrame, screen: match.screen, settings: actionSettings()
+              )
+        else {
+            preview.hide()
+            return
+        }
+        preview.show(rect, on: match.screen)
+    }
+
+    private func finish() {
+        match = nil
+        dragScreens = []
+        preview.hide()
     }
 }
