@@ -11,6 +11,13 @@ final class FakePreview: SnapPreviewing {
     /// What is on screen now: the last rect shown, unless it was hidden since.
     private(set) var visible: CGRect?
 
+    /// The screens of each `prepare(for:)`, by id.
+    private(set) var prepared: [[String]] = []
+
+    func prepare(for screens: [ScreenGeometry]) {
+        prepared.append(screens.map(\.id))
+    }
+
     func show(_ rect: CGRect, on screen: ScreenGeometry) {
         shown.append((rect, screen.id))
         visible = rect

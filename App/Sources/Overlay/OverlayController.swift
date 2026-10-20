@@ -4,9 +4,10 @@ import QuartzCore
 
 /// The drag-to-snap preview: a translucent rect over the screen the window will snap on (PRD §6.4).
 ///
-/// One click-through panel per screen, created the first time it's needed and reused afterwards
-/// (ARCHITECTURE §6). The panel never takes focus or clicks, so the drag underneath is unaffected.
-/// Moving between areas slides the preview to its new rect; with Reduce motion on, it fades instead.
+/// One click-through panel per screen, created or moved into place when a window drag starts and
+/// reused across drags (ARCHITECTURE §6). The panel never takes focus or clicks, so the drag
+/// underneath is unaffected. Moving between areas slides the preview to its new rect; with Reduce
+/// motion on, it jumps there instead. Showing and hiding always fade (NFR-4).
 @MainActor
 final class OverlayController: SnapPreviewing {
     private static let fadeDuration: TimeInterval = 0.12
@@ -14,17 +15,33 @@ final class OverlayController: SnapPreviewing {
 
     private var panels: [String: PreviewPanel] = [:]
     private var visibleScreenID: String?
+    /// Read with the screens at drag start, so panel frames and the screens agree for the whole drag.
+    private var space: CoordinateSpace?
+
+    func prepare(for screens: [ScreenGeometry]) {
+        space = Self.primarySpace()
+        let ids = Set(screens.map(\.id))
+        for (id, panel) in panels where !ids.contains(id) {
+            panel.close()
+            panels[id] = nil
+            if visibleScreenID == id {
+                visibleScreenID = nil
+            }
+        }
+        for screen in screens {
+            _ = panel(for: screen)
+        }
+    }
 
     func show(_ rect: CGRect, on screen: ScreenGeometry) {
         if let visibleScreenID, visibleScreenID != screen.id {
             panels[visibleScreenID]?.fadeOut(duration: Self.fadeDuration)
         }
-        let panel = panel(for: screen)
+        guard let panel = panel(for: screen) else { return }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        // The preview is placed relative to the screen's top-left in AX space; the view is flipped to match.
-        let local = rect.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY)
         let wasVisible = visibleScreenID == screen.id
-        panel.preview(local, slide: wasVisible && !reduceMotion, duration: Self.slideDuration)
+        // The view is flipped, so the screen-local AX rect places the preview directly.
+        panel.preview(screen.localRect(rect), slide: wasVisible && !reduceMotion, duration: Self.slideDuration)
         if !wasVisible {
             panel.fadeIn(duration: Self.fadeDuration)
         }
@@ -37,10 +54,10 @@ final class OverlayController: SnapPreviewing {
         self.visibleScreenID = nil
     }
 
-    private func panel(for screen: ScreenGeometry) -> PreviewPanel {
-        // The primary screen (with the menu bar) is the flip reference (ARCHITECTURE §4).
-        let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
-        let frame = CoordinateSpace(primaryScreenHeight: primaryHeight).appKitRect(fromAX: screen.frame)
+    /// The panel covering `screen`, created or moved into place if needed. `nil` with no screens at all.
+    private func panel(for screen: ScreenGeometry) -> PreviewPanel? {
+        guard let space = space ?? Self.primarySpace() else { return nil }
+        let frame = space.appKitRect(fromAX: screen.frame)
         if let panel = panels[screen.id] {
             if panel.frame != frame {
                 panel.setFrame(frame, display: false)
@@ -51,15 +68,26 @@ final class OverlayController: SnapPreviewing {
         panels[screen.id] = panel
         return panel
     }
+
+    private static func primarySpace() -> CoordinateSpace? {
+        // The primary screen (with the menu bar) is the flip reference (ARCHITECTURE §4).
+        NSScreen.screens.first.map { CoordinateSpace(primaryScreenHeight: $0.frame.height) }
+    }
 }
 
 /// A borderless, click-through panel covering one screen, holding the preview layer.
 @MainActor
 private final class PreviewPanel: NSPanel {
+    /// Where a fade-in starts, so the very first frame already shows the preview (AC-5).
+    private static let fadeInStartAlpha: CGFloat = 0.5
+
     private let previewLayer = CALayer()
+    /// Counts fades. A fade-out only orders the panel out if no fade started after it.
+    private var fadeGeneration = 0
 
     init(frame: CGRect) {
-        super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
+        // Not deferred: the window-server backing is made now, at drag start, not on the first preview.
+        super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         level = .statusBar
         isOpaque = false
         backgroundColor = .clear
@@ -94,6 +122,8 @@ private final class PreviewPanel: NSPanel {
     }
 
     func fadeIn(duration: TimeInterval) {
+        fadeGeneration += 1
+        alphaValue = max(alphaValue, Self.fadeInStartAlpha)
         orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
@@ -102,13 +132,15 @@ private final class PreviewPanel: NSPanel {
     }
 
     func fadeOut(duration: TimeInterval) {
+        fadeGeneration += 1
+        let generation = fadeGeneration
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
             animator().alphaValue = 0
         } completionHandler: { [weak self] in
-            // A new preview may have faded the panel back in meanwhile.
             MainActor.assumeIsolated {
-                if self?.alphaValue == 0 {
+                // A preview may have faded the panel back in meanwhile.
+                if self?.fadeGeneration == generation {
                     self?.orderOut(nil)
                 }
             }

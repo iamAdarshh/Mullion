@@ -70,6 +70,12 @@ struct DragSnapControllerTests {
 
     // MARK: Preview
 
+    @Test func startingADragPreparesThePreviewOnEveryScreen() {
+        let harness = Harness([FakeScreens.laptop, FakeScreens.externalAbove])
+        harness.start()
+        #expect(harness.preview.prepared == [["laptop", "externalAbove"]])
+    }
+
     @Test func enteringAnAreaPreviewsTheSnappedFrame() {
         let harness = Harness()
         harness.start()

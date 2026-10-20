@@ -102,18 +102,18 @@ Finding the focused window: `AXUIElementCreateApplication(frontmostApp.pid)`, th
 ```
 leftMouseDown ──► remember the press point (no window lookup yet)
 leftMouseDragged
-   ├─ after 4 pt: window under the cursor, from CGWindowList (number, pid, bounds); the window has
-   │  already followed the cursor, so the press point may no longer be over it
+   ├─ after 4 pt: frontmost window under the cursor or the press point, from CGWindowList (number,
+   │  pid, bounds); the window may already be ahead of the press point, or still behind the cursor
    ├─ until it moves: has its origin moved with the same size? not within 30 pt → ignore this drag
    │  (text selection, scrollbars, resizing)
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
-every 0.25 s during a window drag: left button no longer held ──► release was missed: cancel
+every 0.25 s during a window drag: button up on two checks in a row ──► release was missed: cancel
 leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
 ```
 - During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again.
 - Hysteresis: once an area is entered, the cursor has to move 8 pt past the area's edge before it counts as having left. This prevents flicker at boundaries.
-- The overlay is one `NSPanel` per screen with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient]`. Panels are created lazily and reused.
+- The overlay is one `NSPanel` per screen, created or updated when a window drag starts (so the first preview appears within a frame) and dropped for displays that are gone, with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient]`. Panels are reused across drags.
 
 ## 7. Concurrency model
 - `@MainActor`: UI, menu, overlay, `ActionDispatcher` state.

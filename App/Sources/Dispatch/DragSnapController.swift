@@ -32,6 +32,7 @@ final class DragSnapController {
     /// - Parameter windowFrame: The dragged window's frame before the drag.
     func dragStarted(windowFrame: CGRect, at cursor: CGPoint) {
         dragScreens = screens.screens
+        preview.prepare(for: dragScreens)
         self.windowFrame = windowFrame
         match = nil
         dragMoved(to: cursor)
