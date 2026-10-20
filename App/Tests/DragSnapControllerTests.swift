@@ -126,4 +126,40 @@ struct DragSnapControllerTests {
         harness.controller.dragCancelled()
         #expect(harness.preview.visible == nil)
     }
+
+    // MARK: ⌥ disables snapping
+
+    @Test func holdingOptionHidesThePreviewAtOnce() {
+        let harness = Harness()
+        harness.start(at: CGPoint(x: 1, y: 400))
+        harness.controller.setSnappingDisabled(true)
+        #expect(harness.controller.match == nil)
+        #expect(harness.preview.visible == nil)
+    }
+
+    @Test func withOptionHeldNoAreaIsEnteredAndTheDropDoesNothing() {
+        let harness = Harness()
+        harness.controller.setSnappingDisabled(true)
+        harness.start()
+        harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
+        #expect(harness.preview.shown.isEmpty)
+        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 400)) == nil)
+    }
+
+    @Test func releasingOptionBringsThePreviewBackWithoutMoving() {
+        let harness = Harness()
+        harness.start(at: CGPoint(x: 1, y: 400))
+        harness.controller.setSnappingDisabled(true)
+        harness.controller.setSnappingDisabled(false)
+        #expect(harness.controller.match?.action == .leftHalf)
+        #expect(harness.preview.visible == Self.leftHalf)
+    }
+
+    @Test func optionOutsideADragShowsNothing() {
+        let harness = Harness()
+        harness.controller.setSnappingDisabled(true)
+        harness.controller.setSnappingDisabled(false)
+        #expect(harness.preview.shown.isEmpty)
+        #expect(harness.preview.hides == 0)
+    }
 }

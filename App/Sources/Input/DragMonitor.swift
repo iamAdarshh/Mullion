@@ -8,6 +8,9 @@ import MullionCore
 /// It never sees events sent to Mullion itself, so Mullion's own windows are never dragged.
 @MainActor
 final class DragMonitor {
+    /// Called with whether ⌥ is held, on every mouse and modifier event: ⌥ turns snapping off (PRD §6.4).
+    var onOptionKey: ((Bool) -> Void)?
+
     private let tracker: DragTracker
     private var monitor: Any?
 
@@ -18,7 +21,8 @@ final class DragMonitor {
     /// Starts or stops watching. Stopped while Accessibility is revoked, since nothing could be snapped.
     func setEnabled(_ enabled: Bool) {
         if enabled, monitor == nil {
-            monitor = addMonitor(for: [.leftMouseDown, .leftMouseDragged, .leftMouseUp])
+            // `.flagsChanged` so that pressing or releasing ⌥ while holding a window still takes effect.
+            monitor = addMonitor(for: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .flagsChanged])
             Log.drag.info("Drag monitor started")
         } else if !enabled, let monitor {
             NSEvent.removeMonitor(monitor)
@@ -36,13 +40,15 @@ final class DragMonitor {
             // The event's own position, already in Quartz (AX) space. `NSEvent.mouseLocation` would be
             // where the cursor is when this handler runs, which can be later.
             let location = event.cgEvent?.location
+            let isOptionHeld = event.modifierFlags.contains(.option)
             // Global monitor handlers are called on the main thread.
-            MainActor.assumeIsolated { self?.handle(type, at: location) }
+            MainActor.assumeIsolated { self?.handle(type, at: location, isOptionHeld: isOptionHeld) }
         }
     }
 
-    private func handle(_ type: NSEvent.EventType, at location: CGPoint?) {
-        guard let point = location ?? Self.cursorLocation() else { return }
+    private func handle(_ type: NSEvent.EventType, at location: CGPoint?, isOptionHeld: Bool) {
+        onOptionKey?(isOptionHeld)
+        guard type != .flagsChanged, let point = location ?? Self.cursorLocation() else { return }
         switch type {
         case .leftMouseDown: tracker.mouseDown(at: point)
         case .leftMouseDragged: tracker.mouseDragged(to: point)

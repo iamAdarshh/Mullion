@@ -13,6 +13,9 @@ final class DragSnapController {
     private let actionSettings: () -> ActionSettings
     private var dragScreens: [ScreenGeometry] = []
     private var windowFrame = CGRect.zero
+    /// The cursor's last position during a window drag; `nil` when no window is being dragged.
+    private var cursor: CGPoint?
+    private var isSnappingDisabled = false
 
     /// The area under the cursor, or `nil` outside every area or when no window is being dragged.
     private(set) var match: SnapMatch?
@@ -39,13 +42,24 @@ final class DragSnapController {
     }
 
     func dragMoved(to cursor: CGPoint) {
-        let next = SnapAreaResolver.resolve(
+        self.cursor = cursor
+        let next = isSnappingDisabled ? nil : SnapAreaResolver.resolve(
             cursor: cursor, screens: dragScreens, previous: match, settings: dragSettings()
         )
         guard next != match else { return }
         match = next
         Log.drag.debug("Snap area: \(next.map(\.action.rawValue) ?? "none", privacy: .public)")
         showPreview()
+    }
+
+    /// Turns snapping off while the user holds ⌥ (PRD §6.4). Takes effect at once, mid-drag: the
+    /// preview hides, or comes back when ⌥ is released, without waiting for the mouse to move.
+    func setSnappingDisabled(_ disabled: Bool) {
+        guard disabled != isSnappingDisabled else { return }
+        isSnappingDisabled = disabled
+        if let cursor {
+            dragMoved(to: cursor)
+        }
     }
 
     /// Forgets the drag without a drop.
@@ -80,6 +94,7 @@ final class DragSnapController {
 
     private func finish() {
         match = nil
+        cursor = nil
         dragScreens = []
         preview.hide()
     }

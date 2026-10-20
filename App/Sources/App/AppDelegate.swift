@@ -111,7 +111,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             dispatcher?.perform(match.action, onDropped: window, on: match.screen)
         }
         tracker.onCancelled = { [weak snapper] _ in snapper?.dragCancelled() }
-        return (DragMonitor(tracker: tracker), snapper)
+        let monitor = DragMonitor(tracker: tracker)
+        monitor.onOptionKey = { [weak snapper] held in snapper?.setSnappingDisabled(held) }
+        return (monitor, snapper)
     }
 
     func applicationSupportsSecureRestorableState(_: NSApplication) -> Bool {
