@@ -1,4 +1,5 @@
 import ApplicationServices
+import MullionCore
 
 /// Synchronous Accessibility calls on windows (ARCHITECTURE §5).
 ///
@@ -25,12 +26,30 @@ enum AXWindow {
         }
         let window = try element(from: value)
         setTimeout(window)
+        return isStandard(window) ? window : nil
+    }
 
-        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return nil }
-        if (try? bool(window, fullScreenAttribute)) == true {
+    /// The standard window of the app with `pid` whose frame is within `tolerance` of `frame`, or
+    /// `nil` when none matches. Finds a window the user dragged: the window server knows where it is,
+    /// but there is no public way to turn its window number into an AX element (ADR-0003).
+    static func window(pid: pid_t, matching frame: CGRect, tolerance: CGFloat) throws -> AXUIElement? {
+        let value: CFTypeRef
+        do {
+            value = try copyAttribute(application(pid), kAXWindowsAttribute)
+        } catch AXWindowError.attributeUnavailable {
             return nil
         }
-        return window
+        guard let items = value as? [CFTypeRef] else { throw AXWindowError.unexpectedValueType }
+        for item in items {
+            guard let window = try? element(from: item) else { continue }
+            setTimeout(window)
+            guard let candidate = try? self.frame(of: window),
+                  candidate.isApproximatelyEqual(to: frame, tolerance: tolerance),
+                  isStandard(window)
+            else { continue }
+            return window
+        }
+        return nil
     }
 
     /// The window's frame in AX space.
@@ -108,6 +127,12 @@ enum AXWindow {
     }
 
     // MARK: Private
+
+    /// A standard window that isn't full screen: the only kind Mullion moves (AC-3).
+    private static func isStandard(_ window: AXUIElement) -> Bool {
+        guard (try? string(window, kAXSubroleAttribute)) == kAXStandardWindowSubrole else { return false }
+        return (try? bool(window, fullScreenAttribute)) != true
+    }
 
     private static func application(_ pid: pid_t) -> AXUIElement {
         let app = AXUIElementCreateApplication(pid)

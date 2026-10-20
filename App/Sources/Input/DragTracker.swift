@@ -29,9 +29,10 @@ final class DragTracker {
     var onMoveStarted: ((DraggedWindow, CGPoint) -> Void)?
     /// The cursor moved while dragging a window.
     var onMoved: ((DraggedWindow, CGPoint) -> Void)?
-    /// The user let go of a window they were dragging.
-    var onEnded: ((DraggedWindow, CGPoint) -> Void)?
-    /// A window drag stopped without a drop, for example because Accessibility was revoked.
+    /// The user let go of a window they were dragging. Passes where the window is now, and the cursor.
+    var onEnded: ((DroppedWindow, CGPoint) -> Void)?
+    /// A window drag stopped without a drop, for example because Accessibility was revoked or the
+    /// window closed.
     var onCancelled: ((DraggedWindow) -> Void)?
 
     private enum Phase {
@@ -111,7 +112,12 @@ final class DragTracker {
 
     func mouseUp(at point: CGPoint) {
         if case let .moving(window) = phase {
-            onEnded?(window, point)
+            if let frame = windowList.bounds(of: window.id) {
+                onEnded?(DroppedWindow(pid: window.pid, frameBeforeDrag: window.frameBeforeDrag, frame: frame), point)
+            } else {
+                Log.drag.debug("The dragged window closed before the drop")
+                onCancelled?(window)
+            }
         }
         becomeIdle()
     }

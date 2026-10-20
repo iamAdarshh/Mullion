@@ -17,6 +17,7 @@ struct DragTrackerTests {
         var startedWindows: [DraggedWindow] = []
         var moved: [CGPoint] = []
         var ended: [CGPoint] = []
+        var droppedWindows: [DroppedWindow] = []
         var cancelled = 0
         var isButtonDown = true
     }
@@ -40,7 +41,10 @@ struct DragTrackerTests {
                 recorder.startedWindows.append(window)
             }
             tracker.onMoved = { [recorder] _, point in recorder.moved.append(point) }
-            tracker.onEnded = { [recorder] _, point in recorder.ended.append(point) }
+            tracker.onEnded = { [recorder] window, point in
+                recorder.ended.append(point)
+                recorder.droppedWindows.append(window)
+            }
             tracker.onCancelled = { [recorder] _ in recorder.cancelled += 1 }
         }
 
@@ -83,6 +87,27 @@ struct DragTrackerTests {
         harness.tracker.mouseUp(at: CGPoint(x: 350, y: 110))
         #expect(harness.recorder.moved == [CGPoint(x: 350, y: 110)])
         #expect(harness.recorder.ended == [CGPoint(x: 350, y: 110)])
+    }
+
+    @Test func theDropPassesWhereTheWindowIsNowAndWhereItStarted() {
+        let harness = Harness()
+        harness.addWindow()
+        harness.startWindowDrag()
+        harness.dragWindow(by: 50)
+        harness.tracker.mouseUp(at: CGPoint(x: 350, y: 110))
+        #expect(harness.recorder.droppedWindows == [
+            DroppedWindow(pid: Self.pid, frameBeforeDrag: Self.frame, frame: Self.frame.offsetBy(dx: 50, dy: 0)),
+        ])
+    }
+
+    @Test func aWindowThatClosesBeforeTheDropIsCancelled() {
+        let harness = Harness()
+        harness.addWindow()
+        harness.startWindowDrag()
+        harness.windows.close(Self.windowID)
+        harness.tracker.mouseUp(at: Self.press)
+        #expect(harness.recorder.ended.isEmpty)
+        #expect(harness.recorder.cancelled == 1)
     }
 
     @Test func aPressAndASmallWobbleReadNothing() {

@@ -109,9 +109,10 @@ leftMouseDragged
    ├─ SnapAreaResolver.resolve(cursor, screens, previous) → SnapArea?   [Core, pure]
    └─ OverlayController.show(preview: ActionCalculator.rect(area.action, screen))
 every 0.25 s during a window drag: button up on two checks in a row ──► release was missed: cancel
-leftMouseUp ──► if area: ActionDispatcher.perform(area.action, window) ; hide overlay
+leftMouseUp ──► hide overlay; if area: ActionDispatcher.perform(area.action, onDropped:, on: area.screen)
+   └─ the app's AX windows, matched to the window-server bounds within 2 pt (asked again once if busy)
 ```
-- During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again.
+- During the drag the window is read from the **window server** (`CGWindowListCopyWindowInfo`), never over AX: the app is busy in its window-drag loop and every AX read times out. Only number, pid, layer and bounds are read, so no Screen Recording permission is needed. The AX element is looked up at the drop, when the app answers again: there is no public way to map a window number to an AX element, so the app's standard windows are matched by frame. The snap is planned on the drop's screen only, so a window still mostly on the neighbouring display snaps where the preview showed it, and *Restore* goes back to the frame from before the drag.
 - Hysteresis: once an area is entered, the cursor has to move 8 pt past the area's edge before it counts as having left. This prevents flicker at boundaries.
 - The overlay is one `NSPanel` per screen, created or updated when a window drag starts (so the first preview appears within a frame) and dropped for displays that are gone, with `ignoresMouseEvents = true`, `level = .statusBar`, and collection behaviour `[.canJoinAllSpaces, .fullScreenAuxiliary, .transient]`. Panels are reused across drags.
 

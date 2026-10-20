@@ -1,4 +1,5 @@
 import ApplicationServices
+import MullionCore
 @testable import Mullion
 
 /// An in-memory stand-in for `AXQueue`. Windows behave like real apps: they enforce a minimum
@@ -16,7 +17,10 @@ actor FakeWindowController: WindowControlling {
     private(set) var focusedWindowCalls = 0
     /// The pid of every window `isAlive` was asked about, in order.
     private(set) var isAliveCalls: [pid_t] = []
+    /// How many times a dropped window was looked up.
+    private(set) var windowLookups = 0
     private var focused: WindowRef?
+    private var lookupErrors: [AXWindowError] = []
     private var setFrameError: AXWindowError?
     private var resizesBeforeFailing = false
 
@@ -46,6 +50,11 @@ actor FakeWindowController: WindowControlling {
         resizesBeforeFailing = afterResizing
     }
 
+    /// Makes the next window lookups throw these errors, one per lookup.
+    func failWindowLookups(with errors: [AXWindowError]) {
+        lookupErrors = errors
+    }
+
     func frame(ofWindow window: WindowRef) -> CGRect? {
         windows[window]?.frame
     }
@@ -56,6 +65,16 @@ actor FakeWindowController: WindowControlling {
         focusedWindowCalls += 1
         guard let focused, focused.pid == pid else { return nil }
         return focused
+    }
+
+    func window(pid: pid_t, matching frame: CGRect, tolerance: CGFloat) throws -> WindowRef? {
+        windowLookups += 1
+        if !lookupErrors.isEmpty {
+            throw lookupErrors.removeFirst()
+        }
+        return windows.first { ref, window in
+            ref.pid == pid && window.isAlive && window.frame.isApproximatelyEqual(to: frame, tolerance: tolerance)
+        }?.key
     }
 
     func frame(of window: WindowRef) throws -> CGRect {
