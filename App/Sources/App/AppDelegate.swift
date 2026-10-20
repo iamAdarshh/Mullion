@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkeys: HotkeyService?
     private var dragMonitor: DragMonitor?
     private var dragSnapper: DragSnapController?
+    private var tilingNotice: TilingNoticeCoordinator?
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -43,12 +44,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.hotkeys = hotkeys
         self.dragMonitor = dragMonitor
         self.dragSnapper = dragSnapper
+        let tilingNotice = Self.makeTilingNotice(preferences: preferences)
+        self.tilingNotice = tilingNotice
 
-        accessibility.onTrustChange = { [weak menuBar, weak hotkeys, weak dragMonitor] trusted in
+        accessibility.onTrustChange = { [weak menuBar, weak hotkeys, weak dragMonitor, weak tilingNotice] trusted in
             menuBar?.setAccessibilityTrusted(trusted)
             hotkeys?.setEnabled(trusted)
             dragMonitor?.setEnabled(trusted)
+            if trusted {
+                tilingNotice?.showLater()
+            }
         }
+        Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
+
+        Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
+        hotkeys.start()
+        hotkeys.setEnabled(accessibility.isTrusted)
+        dragMonitor.setEnabled(accessibility.isTrusted)
+        accessibility.start()
+        if accessibility.isTrusted {
+            tilingNotice.showLater()
+        }
+    }
+
+    private static func connect(
+        _ menuBar: MenuBarController,
+        accessibility: AccessibilityCoordinator,
+        dispatcher: ActionDispatcher,
+        preferences: Preferences
+    ) {
         menuBar.onMenuWillOpen = { [weak accessibility] in
             accessibility?.refresh()
         }
@@ -62,12 +86,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.onSetIgnored = { ignored, bundleID in
             preferences.setIgnored(ignored, bundleID: bundleID)
         }
+    }
 
-        Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
-        hotkeys.start()
-        hotkeys.setEnabled(accessibility.isTrusted)
-        dragMonitor.setEnabled(accessibility.isTrusted)
-        accessibility.start()
+    /// The macOS tiling notice (PRD §6.6). Shown once Accessibility is granted, so it never covers
+    /// the welcome window.
+    private static func makeTilingNotice(preferences: Preferences) -> TilingNoticeCoordinator {
+        TilingNoticeCoordinator(
+            conflicts: { SystemTilingCheck.live().conflicts() },
+            isHidden: { preferences.hidesTilingNotice },
+            hide: { preferences.hidesTilingNotice = true },
+            presenter: TilingNoticeAlert(),
+            openSettings: { TilingNoticeAlert.openSettings() }
+        )
     }
 
     private static func makeDispatcher(

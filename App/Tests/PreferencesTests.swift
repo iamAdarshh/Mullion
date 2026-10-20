@@ -46,4 +46,10 @@ final class PreferencesTests {
         preferences.restoresSizeOnDragAway = false
         #expect(!preferences.restoresSizeOnDragAway)
     }
+
+    @Test func theTilingNoticeIsShownUntilHidden() {
+        #expect(!preferences.hidesTilingNotice)
+        preferences.hidesTilingNotice = true
+        #expect(preferences.hidesTilingNotice)
+    }
 }

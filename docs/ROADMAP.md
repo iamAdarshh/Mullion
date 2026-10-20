@@ -43,7 +43,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [x] Preview overlay panel, one per screen, with reduced-motion support
 - [x] ⌥ to disable snapping, and the ignore list
 - [x] Restore size when dragging a snapped window away
-- [ ] Detection of the Sequoia tiling conflict and the notice (PRD §6.6)
+- [x] Detection of the Sequoia tiling conflict and the notice (PRD §6.6)
 
 **Exit criteria:** AC-5 and AC-6 pass, and the `M2` test-matrix rows pass, including a vertical display and an ultrawide (simulated with BetterDisplay or a real monitor).
 

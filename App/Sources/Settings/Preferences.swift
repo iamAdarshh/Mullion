@@ -12,6 +12,7 @@ final class Preferences {
         static let repeatBehavior = "repeatBehavior"
         static let ignoredBundleIDs = "ignoredBundleIDs"
         static let restoresSizeOnDragAway = "restoresSizeOnDragAway"
+        static let hidesTilingNotice = "hidesTilingNotice"
     }
 
     private let defaults: UserDefaults
@@ -53,6 +54,12 @@ final class Preferences {
     var restoresSizeOnDragAway: Bool {
         get { defaults.bool(forKey: Key.restoresSizeOnDragAway) }
         set { defaults.set(newValue, forKey: Key.restoresSizeOnDragAway) }
+    }
+
+    /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).
+    var hidesTilingNotice: Bool {
+        get { defaults.bool(forKey: Key.hidesTilingNotice) }
+        set { defaults.set(newValue, forKey: Key.hidesTilingNotice) }
     }
 
     /// Apps whose windows never snap when dragged, by bundle ID (PRD §6.4). Shortcuts and the menu

@@ -12,15 +12,21 @@
     "Center" : {},
     "Center Third" : {},
     "Displays" : {},
+    "Don't Show Again" : {
+      "comment" : "Button: never show the macOS tiling notice again."
+    },
     "First Third" : {},
     "First Two-Thirds" : {},
     "Grant Accessibility access…" : {},
-    "Ignore “%@”" : {
-      "comment" : "Menu item. Windows of the named app never snap when dragged."
-    },
     "Grant Access…" : {},
     "Grow" : {},
     "Halves" : {},
+    "Holding ⌥ while dragging tiles the window with macOS instead of moving it without snapping. In Desktop & Dock, turn off “Hold ⌥ key while dragging windows to tile”." : {
+      "comment" : "Notice text when macOS ⌥-drag tiling is on. The quoted name is a macOS setting title."
+    },
+    "Ignore “%@”" : {
+      "comment" : "Menu item. Windows of the named app never snap when dragged."
+    },
     "Last Third" : {},
     "Last Two-Thirds" : {},
     "Left Half" : {},
@@ -31,6 +37,9 @@
     "Mullion" : {},
     "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
     "Mullion: Accessibility access needed" : {},
+    "Open Desktop & Dock Settings" : {
+      "comment" : "Button: opens System Settings so the user can turn macOS tiling off."
+    },
     "Open System Settings" : {},
     "Other" : {},
     "Quarters" : {},
@@ -49,7 +58,13 @@
     "Top Right Sixth" : {},
     "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
     "Waiting for access…" : {},
-    "Welcome to Mullion" : {}
+    "Welcome to Mullion" : {},
+    "macOS is also tiling windows" : {
+      "comment" : "Title of the notice shown when macOS window tiling is on."
+    },
+    "macOS tiles windows you drag to the screen edges or the menu bar, so macOS and Mullion both act on the same drag. In Desktop & Dock, turn off “Drag windows to screen edges to tile” and “Drag windows to menu bar to fill screen”." : {
+      "comment" : "Notice text when macOS edge tiling is on. The quoted names are macOS setting titles."
+    }
   },
   "version" : "1.0"
 }
