@@ -11,6 +11,7 @@ final class Preferences {
         static let resizeStep = "resizeStep"
         static let repeatBehavior = "repeatBehavior"
         static let ignoredBundleIDs = "ignoredBundleIDs"
+        static let restoresSizeOnDragAway = "restoresSizeOnDragAway"
     }
 
     private let defaults: UserDefaults
@@ -23,6 +24,7 @@ final class Preferences {
             Key.almostMaximizePercent: Int((fallback.almostMaximizeFraction * 100).rounded()),
             Key.resizeStep: Double(fallback.resizeStep),
             Key.repeatBehavior: fallback.repeatBehavior.rawValue,
+            Key.restoresSizeOnDragAway: true,
         ])
     }
 
@@ -44,6 +46,13 @@ final class Preferences {
             defaults.set(Double(newValue.resizeStep), forKey: Key.resizeStep)
             defaults.set(newValue.repeatBehavior.rawValue, forKey: Key.repeatBehavior)
         }
+    }
+
+    /// Whether a snapped window dragged away and dropped outside every snap area gets its size from
+    /// before the snap back (PRD §6.3, §6.8 General).
+    var restoresSizeOnDragAway: Bool {
+        get { defaults.bool(forKey: Key.restoresSizeOnDragAway) }
+        set { defaults.set(newValue, forKey: Key.restoresSizeOnDragAway) }
     }
 
     /// Apps whose windows never snap when dragged, by bundle ID (PRD §6.4). Shortcuts and the menu

@@ -75,14 +75,29 @@ final class DragSnapController {
         finish()
     }
 
-    /// Ends the drag and returns the area it ended in.
+    /// What a drop does to the window.
+    enum Drop: Equatable {
+        /// Dropped in a snap area: snap there.
+        case snap(SnapMatch)
+        /// Dropped outside every area: a snapped window gets its size back (PRD §6.3).
+        case free
+        /// ⌥ was held or the app is ignored: Mullion leaves the window alone.
+        case leaveAlone
+    }
+
+    /// Ends the drag and says what the drop does.
     @discardableResult
-    func dragEnded(at cursor: CGPoint) -> SnapMatch? {
+    func dragEnded(at cursor: CGPoint) -> Drop {
         dragMoved(to: cursor)
-        let result = match
+        let drop: Drop = if isSnappingDisabled || isIgnoredDrag {
+            .leaveAlone
+        } else {
+            match.map(Drop.snap) ?? .free
+        }
+        let area = match.map(\.action.rawValue) ?? "no area"
+        Log.drag.debug("Window drag ended in \(area, privacy: .public)")
         finish()
-        Log.drag.debug("Window drag ended in \(result.map(\.action.rawValue) ?? "no area", privacy: .public)")
-        return result
+        return drop
     }
 
     // MARK: Private

@@ -45,6 +45,14 @@ final class RestoreStore {
         entries[window] = entry
     }
 
+    /// Whether a window of the app with `pid` was last snapped to `frame`, within `tolerance`. Answers
+    /// without asking the app, so a drop of a window Mullion never snapped costs no AX call.
+    func hasSnap(pid: pid_t, at frame: CGRect, tolerance: CGFloat) -> Bool {
+        entries.contains { window, entry in
+            window.pid == pid && entry.lastSnap?.frame.isApproximatelyEqual(to: frame, tolerance: tolerance) == true
+        }
+    }
+
     /// Forgets a window, after it was restored or once it has closed.
     func forget(_ window: WindowRef) {
         entries[window] = nil

@@ -13,16 +13,18 @@ final class ActionDispatcher {
     /// its window-drag loop when the mouse button comes up.
     static let dropRetryDelay = Duration.milliseconds(50)
 
-    /// One action to run, and the window it runs on.
+    /// One move to make, and the window it is made on.
     private struct Request {
-        let action: WindowAction
+        /// Names the move in logs and signposts.
+        let name: String
         /// Finds the window. `nil` means there is nothing to act on, silently (AC-3, AC-4).
         let findWindow: () async throws -> WindowRef?
-        /// The screens to plan with. A drag snap passes only the screen it was dropped on, so a window
-        /// that is still mostly on the neighbouring display snaps where the preview showed it.
-        let screens: [ScreenGeometry]
-        /// The frame *Restore* goes back to, when it isn't the window's frame as the action starts.
-        let restoreFrame: CGRect?
+        /// Where the window goes, given what Mullion knows about it. `nil` leaves it alone.
+        let plan: (WindowContext) -> ActionPlan?
+        /// The frame *Restore* goes back to, when it isn't the window's frame as the move starts.
+        var restoreFrame: CGRect?
+        /// Forget the window afterwards instead of recording the move: it is back to how the user had it.
+        var forgetsWindow = false
     }
 
     private let windows: any WindowControlling
@@ -32,6 +34,7 @@ final class ActionDispatcher {
     private let frontmostPID: () -> pid_t?
     private let isProcessRunning: (pid_t) -> Bool
     private let retryDelay: Duration
+    private let restoresSizeOnDragAway: () -> Bool
     private let store = RestoreStore()
     private let signposter = OSSignposter(subsystem: Log.subsystem, category: "snap")
     /// The action currently running. Each new action waits for it, so two quick key presses
@@ -43,6 +46,7 @@ final class ActionDispatcher {
     ///   - frontmostPID: The frontmost app's pid, or `nil` when it's Mullion itself or there is none.
     ///   - isProcessRunning: Whether an app is still running. Cheap, and needs no AX call.
     ///   - retryDelay: How long to wait before looking up a dropped window again.
+    ///   - restoresSizeOnDragAway: Whether a snapped window dragged away gets its size back (PRD §6.3).
     init(
         windows: any WindowControlling,
         screens: any ScreenProviding,
@@ -50,9 +54,11 @@ final class ActionDispatcher {
         isTrusted: @escaping () -> Bool,
         frontmostPID: @escaping () -> pid_t?,
         isProcessRunning: @escaping (pid_t) -> Bool,
-        retryDelay: Duration = ActionDispatcher.dropRetryDelay
+        retryDelay: Duration = ActionDispatcher.dropRetryDelay,
+        restoresSizeOnDragAway: @escaping () -> Bool = { true }
     ) {
         self.retryDelay = retryDelay
+        self.restoresSizeOnDragAway = restoresSizeOnDragAway
         self.windows = windows
         self.screens = screens
         self.settings = settings
@@ -71,14 +77,16 @@ final class ActionDispatcher {
     @discardableResult
     func perform(_ action: WindowAction) -> Task<Void, Never> {
         enqueue(Request(
-            action: action,
+            name: action.rawValue,
             findWindow: { [windows, frontmostPID] in
                 // No focused standard window (desktop, full screen, no windows): nothing to do (AC-3, AC-4).
                 guard let pid = frontmostPID() else { return nil }
                 return try await windows.focusedWindow(pid: pid)
             },
-            screens: screens.screens,
-            restoreFrame: nil
+            plan: { [screens, settings] context in
+                ActionPlanner.plan(action, for: context, screens: screens.screens, settings: settings())
+            },
+            forgetsWindow: action == .restore
         ))
     }
 
@@ -91,10 +99,34 @@ final class ActionDispatcher {
         on screen: ScreenGeometry
     ) -> Task<Void, Never> {
         enqueue(Request(
-            action: action,
+            name: action.rawValue,
             findWindow: { [weak self] in try await self?.droppedWindow(window) },
-            screens: [screen],
+            // Only the drop's screen, so a window still mostly on the neighbouring display snaps where
+            // the preview showed it.
+            plan: { [settings] context in
+                ActionPlanner.plan(action, for: context, screens: [screen], settings: settings())
+            },
             restoreFrame: window.frameBeforeDrag
+        ))
+    }
+
+    /// Gives a snapped window that was dragged away and dropped outside every snap area its size from
+    /// before the snap back, under the cursor (PRD §6.3). Done at the drop: during the drag the app is
+    /// busy in its window-drag loop and wouldn't answer. Windows Mullion never snapped cost no AX call.
+    @discardableResult
+    func restoreSize(ofDropped window: DroppedWindow, cursor: CGPoint) -> Task<Void, Never> {
+        guard restoresSizeOnDragAway(),
+              store.hasSnap(pid: window.pid, at: window.frameBeforeDrag, tolerance: Self.frameTolerance)
+        else { return Task {} }
+        return enqueue(Request(
+            name: "restoreSizeAfterDrag",
+            findWindow: { [weak self] in try await self?.droppedWindow(window) },
+            plan: { [screens] context in
+                DragAwayPlanner.plan(
+                    for: context, frameBeforeDrag: window.frameBeforeDrag, cursor: cursor, screens: screens.screens
+                )
+            },
+            forgetsWindow: true
         ))
     }
 
@@ -111,13 +143,13 @@ final class ActionDispatcher {
     }
 
     private func run(_ request: Request) async {
-        let action = request.action
+        let name = request.name
         guard isTrusted() else {
-            Log.layout.info("Ignoring \(action.rawValue, privacy: .public): Accessibility access is missing")
+            Log.layout.info("Ignoring \(name, privacy: .public): Accessibility access is missing")
             return
         }
 
-        let interval = signposter.beginInterval("Mullion.snap", "\(action.rawValue, privacy: .public)")
+        let interval = signposter.beginInterval("Mullion.snap", "\(name, privacy: .public)")
         defer { signposter.endInterval("Mullion.snap", interval) }
 
         do {
@@ -126,9 +158,9 @@ final class ActionDispatcher {
             await forgetClosedWindows(except: window)
         } catch let error as AXWindowError where error.isRoutine {
             // The window closed mid-action, or the app is busy. Not worth keeping on disk.
-            Log.ax.info("\(action.rawValue, privacy: .public) skipped: \(String(describing: error), privacy: .public)")
+            Log.ax.info("\(name, privacy: .public) skipped: \(String(describing: error), privacy: .public)")
         } catch {
-            Log.ax.error("\(action.rawValue, privacy: .public) failed: \(String(describing: error), privacy: .public)")
+            Log.ax.error("\(name, privacy: .public) failed: \(String(describing: error), privacy: .public)")
         }
     }
 
@@ -151,12 +183,9 @@ final class ActionDispatcher {
     }
 
     private func apply(_ request: Request, to window: WindowRef) async throws {
-        let action = request.action
         let current = try await windows.frame(of: window)
         let originalFrame = request.restoreFrame ?? current
-        let context = store.context(for: window, frame: current)
-        guard let plan = ActionPlanner.plan(action, for: context, screens: request.screens, settings: settings())
-        else { return }
+        guard let plan = request.plan(store.context(for: window, frame: current)) else { return }
 
         var moved = false
         let actual: CGRect
@@ -168,13 +197,13 @@ final class ActionDispatcher {
             // The window changed before the app gave up (for example resized, then timed out on the move):
             // keep where it was, so Restore can still put it back (PRD §6.3). A failure that changed
             // nothing leaves the store as it was.
-            if action != .restore, moved || (error as? AXWindowError)?.changedTheWindow == true {
+            if !request.forgetsWindow, moved || (error as? AXWindowError)?.changedTheWindow == true {
                 store.rememberRestoreFrame(originalFrame, of: window)
             }
             throw error
         }
 
-        if action == .restore {
+        if request.forgetsWindow {
             store.forget(window)
         } else {
             store.recordMove(of: window, from: originalFrame, snap: plan.record?.with(frame: actual))

@@ -85,7 +85,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return accessibility?.isTrusted ?? false
             },
             frontmostPID: { Self.frontmostOtherAppPID() },
-            isProcessRunning: { NSRunningApplication(processIdentifier: $0) != nil }
+            isProcessRunning: { NSRunningApplication(processIdentifier: $0) != nil },
+            restoresSizeOnDragAway: { preferences.restoresSizeOnDragAway }
         )
     }
 
@@ -115,8 +116,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         tracker.onMoved = { [weak snapper] _, cursor in snapper?.dragMoved(to: cursor) }
         tracker.onEnded = { [weak snapper, weak dispatcher] window, cursor in
-            guard let match = snapper?.dragEnded(at: cursor) else { return }
-            dispatcher?.perform(match.action, onDropped: window, on: match.screen)
+            switch snapper?.dragEnded(at: cursor) {
+            case let .snap(match): dispatcher?.perform(match.action, onDropped: window, on: match.screen)
+            case .free: dispatcher?.restoreSize(ofDropped: window, cursor: cursor)
+            case .leaveAlone, nil: break
+            }
         }
         tracker.onCancelled = { [weak snapper] _ in snapper?.dragCancelled() }
         let monitor = DragMonitor(tracker: tracker)

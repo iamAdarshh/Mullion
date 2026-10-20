@@ -74,7 +74,7 @@ If the user triggers the same half action twice in a row on the same window, and
 
 ### 6.3 Restore
 - Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
-- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position restores its original *size* under the cursor (the same behaviour as Magnet and Windows).
+- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding ⌥ or an ignored app leaves it alone. On by default (Settings → General, M3).
 
 ### 6.4 Drag to snap
 - Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect. Releasing the mouse applies the action; moving out of the area hides the preview.

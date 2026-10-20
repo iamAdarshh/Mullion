@@ -26,7 +26,7 @@ struct ActionDispatcherDropTests {
         let trust: Trust
         let dispatcher: ActionDispatcher
 
-        init(screens: [ScreenGeometry] = [FakeScreens.laptop]) {
+        init(screens: [ScreenGeometry] = [FakeScreens.laptop], restoresSizeOnDragAway: Bool = true) {
             let trust = Trust()
             self.trust = trust
             dispatcher = ActionDispatcher(
@@ -36,7 +36,8 @@ struct ActionDispatcherDropTests {
                 isTrusted: { trust.isTrusted },
                 frontmostPID: { ActionDispatcherDropTests.pid },
                 isProcessRunning: { _ in true },
-                retryDelay: .zero
+                retryDelay: .zero,
+                restoresSizeOnDragAway: { restoresSizeOnDragAway }
             )
         }
 
@@ -159,5 +160,78 @@ struct ActionDispatcherDropTests {
         harness.trust.isTrusted = false
         await harness.drop()
         #expect(await harness.windows.windowLookups == 0)
+    }
+}
+
+// MARK: Restore the size on drag-away (PRD §6.3)
+
+extension ActionDispatcherDropTests {
+    /// Where the user drops the left-half window after dragging it away by its title bar.
+    private static let draggedAway = CGRect(x: 300, y: 100, width: 735, height: 919)
+    /// 20 % across its title bar.
+    private static let grab = CGPoint(x: 447, y: 110)
+
+    /// Snaps the dragged window to the left half by dropping it, then drags it to `frame`.
+    private func snapThenDrag(_ harness: Harness, to frame: CGRect = draggedAway) async {
+        await harness.addWindows()
+        await harness.drop()
+        try? await harness.windows.setFrame(frame, of: harness.dragged)
+    }
+
+    private func dragAway(_ harness: Harness, to frame: CGRect = draggedAway, cursor: CGPoint = grab) async {
+        let window = DroppedWindow(pid: Self.pid, frameBeforeDrag: Self.leftHalf, frame: frame)
+        await harness.dispatcher.restoreSize(ofDropped: window, cursor: cursor).value
+    }
+
+    @Test func aSnappedWindowDraggedAwayGetsItsSizeBackUnderTheCursor() async {
+        let harness = Harness()
+        await snapThenDrag(harness)
+        await dragAway(harness)
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == CGRect(
+            x: 327,
+            y: 100,
+            width: 600,
+            height: 400
+        ))
+    }
+
+    @Test func afterADragAwayTheWindowIsForgotten() async {
+        let harness = Harness()
+        await snapThenDrag(harness)
+        await dragAway(harness)
+        #expect(!harness.dispatcher.rememberedWindows.contains(harness.dragged))
+    }
+
+    @Test func aWindowMullionNeverSnappedCostsNoAXCall() async {
+        let harness = Harness()
+        await harness.addWindows(draggedFrame: Self.draggedAway)
+        await dragAway(harness)
+        #expect(await harness.windows.windowLookups == 0)
+        #expect(await harness.windows.setFrameCalls.isEmpty)
+    }
+
+    @Test func aWindowDroppedBackInPlaceStaysSnapped() async {
+        let harness = Harness()
+        let nearlyThere = Self.leftHalf.offsetBy(dx: 1, dy: 1)
+        await snapThenDrag(harness, to: nearlyThere)
+        let moves = await harness.windows.setFrameCalls.count
+        await dragAway(harness, to: nearlyThere, cursor: CGPoint(x: 148, y: 48))
+        #expect(await harness.windows.setFrameCalls.count == moves)
+        #expect(harness.dispatcher.rememberedWindows.contains(harness.dragged))
+    }
+
+    @Test func withTheSettingOffTheWindowKeepsItsSize() async {
+        let harness = Harness(restoresSizeOnDragAway: false)
+        await snapThenDrag(harness)
+        await dragAway(harness)
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.draggedAway)
+    }
+
+    @Test func withoutAccessibilityTheWindowKeepsItsSize() async {
+        let harness = Harness()
+        await snapThenDrag(harness)
+        harness.trust.isTrusted = false
+        await dragAway(harness)
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.draggedAway)
     }
 }

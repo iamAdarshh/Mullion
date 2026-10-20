@@ -48,14 +48,21 @@ struct DragSnapControllerTests {
         let harness = Harness()
         harness.start()
         let ended = harness.controller.dragEnded(at: CGPoint(x: 1469, y: 400))
-        #expect(ended?.action == .rightHalf)
+        #expect(ended == .snap(SnapMatch(area: .right, screen: FakeScreens.laptop)))
         #expect(harness.controller.match == nil)
     }
 
-    @Test func endingOutsideEveryAreaReturnsNothing() {
+    @Test func endingOutsideEveryAreaIsAFreeDrop() {
         let harness = Harness()
         harness.start(at: CGPoint(x: 1, y: 400))
-        #expect(harness.controller.dragEnded(at: Self.middle) == nil)
+        #expect(harness.controller.dragEnded(at: Self.middle) == .free)
+    }
+
+    @Test func endingWithOptionHeldLeavesTheWindowAlone() {
+        let harness = Harness()
+        harness.start()
+        harness.controller.setSnappingDisabled(true)
+        #expect(harness.controller.dragEnded(at: Self.middle) == .leaveAlone)
     }
 
     @Test(arguments: [FakeScreens.externalRight, FakeScreens.externalAbove, FakeScreens.portraitLeft])
@@ -150,7 +157,7 @@ struct DragSnapControllerTests {
         harness.start()
         harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
         #expect(harness.preview.shown.isEmpty)
-        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 400)) == nil)
+        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 400)) == .leaveAlone)
     }
 
     @Test func releasingOptionBringsThePreviewBackWithoutMoving() {
@@ -177,7 +184,7 @@ struct DragSnapControllerTests {
         harness.start(at: CGPoint(x: 1, y: 400))
         harness.controller.dragMoved(to: CGPoint(x: 1, y: 1))
         #expect(harness.preview.shown.isEmpty)
-        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 1)) == nil)
+        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 1)) == .leaveAlone)
     }
 
     @Test func releasingOptionDoesNotSnapAnIgnoredApp() {

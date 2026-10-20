@@ -31,4 +31,11 @@ struct PreferencesTests {
         preferences.setIgnored(true, bundleID: "com.apple.Safari")
         #expect(preferences.ignoredBundleIDs == ["com.apple.Safari"])
     }
+
+    @Test func dragAwayRestoresTheSizeByDefault() throws {
+        let preferences = try Self.makePreferences()
+        #expect(preferences.restoresSizeOnDragAway)
+        preferences.restoresSizeOnDragAway = false
+        #expect(!preferences.restoresSizeOnDragAway)
+    }
 }
