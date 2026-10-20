@@ -12,11 +12,11 @@ The optional Window Thumbnail feature (if it ships) would need **Screen Recordin
 
 ## Data
 - Settings live in `UserDefaults` and `~/Library/Application Support/Mullion/`.
-- Window titles are stored only when you save a Workspace, as matching hints. They are never logged above `debug` level.
+- Mullion doesn't read window titles today. The planned Workspaces feature (v2) will store titles only for workspaces you save, as matching hints, and will never log them above `debug` level.
 - **No network connections.** There is no telemetry, no analytics and no crash upload. If an update checker is ever added, it will be opt-in and documented here.
 
 ## Verifying a build
-Release builds are built by CI from a tagged commit. Each GitHub Release lists the DMG's SHA-256:
+Beta builds are made from the tagged commit with `make archive dmg` (see [docs/RELEASING.md](docs/RELEASING.md)); building releases in CI is planned for v1.0. Each GitHub Release lists the DMG's SHA-256:
 ```bash
 shasum -a 256 Mullion-X.Y.Z.dmg
 ```
