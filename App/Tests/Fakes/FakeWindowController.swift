@@ -72,9 +72,20 @@ actor FakeWindowController: WindowControlling {
         if !lookupErrors.isEmpty {
             throw lookupErrors.removeFirst()
         }
-        return windows.first { ref, window in
-            ref.pid == pid && window.isAlive && window.frame.isApproximatelyEqual(to: frame, tolerance: tolerance)
-        }?.key
+        // Like `AXWindow`: the focused (main) window if it matches, then any other window that does,
+        // then the focused window if only its origin differs.
+        let alive = windows.filter { $0.key.pid == pid && $0.value.isAlive }
+        let main = focused.flatMap { ref in alive[ref].map { (ref, $0.frame) } }
+        if let main, main.1.isApproximatelyEqual(to: frame, tolerance: tolerance) {
+            return main.0
+        }
+        if let other = alive.first(where: { $0.value.frame.isApproximatelyEqual(to: frame, tolerance: tolerance) }) {
+            return other.key
+        }
+        if let main, abs(main.1.width - frame.width) <= tolerance, abs(main.1.height - frame.height) <= tolerance {
+            return main.0
+        }
+        return nil
     }
 
     func frame(of window: WindowRef) throws -> CGRect {

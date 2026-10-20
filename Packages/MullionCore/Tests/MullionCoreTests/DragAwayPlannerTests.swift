@@ -63,6 +63,26 @@ struct DragAwayPlannerTests {
         #expect(result == nil)
     }
 
+    /// The pre-drag frame is worked out from the cursor's travel, which can be a few points off.
+    @Test func aPreDragFrameAFewPointsOffStillCountsAsSnapped() {
+        let result = plan(
+            droppedAt: CGRect(x: 300, y: 100, width: 735, height: 919),
+            cursor: CGPoint(x: 447, y: 110),
+            frameBeforeDrag: Self.leftHalf.offsetBy(dx: 6, dy: -5)
+        )
+        #expect(result?.target.size == Self.original.size)
+    }
+
+    @Test(arguments: [
+        CGRect(x: 9, y: 37, width: 735, height: 919),
+        CGRect(x: 0, y: 46, width: 735, height: 919),
+        CGRect(x: 0, y: 37, width: 738, height: 919),
+        CGRect(x: 0, y: 37, width: 735, height: 916),
+    ])
+    func aPreDragFrameTooFarOffIsNotSnapped(frameBeforeDrag: CGRect) {
+        #expect(!DragAwayPlanner.wasSnapped(at: Self.leftHalf, frameBeforeDrag: frameBeforeDrag))
+    }
+
     @Test func aWindowDroppedBackWhereItWasStaysSnapped() {
         let result = plan(droppedAt: Self.leftHalf.offsetBy(dx: 1, dy: 2), cursor: CGPoint(x: 148, y: 49))
         #expect(result == nil)

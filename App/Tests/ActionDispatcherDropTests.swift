@@ -1,3 +1,4 @@
+import ApplicationServices
 import CoreGraphics
 import MullionCore
 import Testing
@@ -51,14 +52,15 @@ struct ActionDispatcherDropTests {
         func drop(
             _ action: WindowAction = .leftHalf,
             at frame: CGRect = ActionDispatcherDropTests.atDrop,
+            from frameBeforeDrag: CGRect = ActionDispatcherDropTests.beforeDrag,
             on screen: ScreenGeometry = FakeScreens.laptop
         ) async {
-            let window = DroppedWindow(pid: ActionDispatcherDropTests.pid, frameBeforeDrag: beforeDrag, frame: frame)
+            let window = DroppedWindow(
+                pid: ActionDispatcherDropTests.pid,
+                frameBeforeDrag: frameBeforeDrag,
+                frame: frame
+            )
             await dispatcher.perform(action, onDropped: window, on: screen).value
-        }
-
-        private var beforeDrag: CGRect {
-            ActionDispatcherDropTests.beforeDrag
         }
     }
 
@@ -97,6 +99,50 @@ struct ActionDispatcherDropTests {
         await harness.windows.focus(harness.dragged)
         await harness.dispatcher.perform(.restore).value
         #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.beforeDrag)
+    }
+
+    // Regression: the app's windows were searched in AX order, so a hidden native tab (its own window,
+    // at the same frame) could be moved instead of the visible window.
+    @Test func theMainWindowWinsOverAHiddenTabAtTheSameFrame() async {
+        let harness = Harness()
+        let tab = WindowRef(element: AXUIElementCreateApplication(Self.pid + 100), pid: Self.pid)
+        await harness.windows.add(tab, frame: Self.atDrop)
+        await harness.windows.add(harness.dragged, frame: Self.atDrop)
+        await harness.windows.focus(harness.dragged)
+        await harness.drop()
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.leftHalf)
+        #expect(await harness.windows.frame(ofWindow: tab) == Self.atDrop)
+    }
+
+    @Test func anAppThatNudgedItsWindowAfterTheDropStillSnaps() async {
+        let harness = Harness()
+        await harness.windows.add(harness.dragged, frame: Self.atDrop.offsetBy(dx: 6, dy: 4))
+        await harness.windows.focus(harness.dragged)
+        await harness.drop()
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.leftHalf)
+    }
+
+    @Test func restoreAfterReSnappingGoesBackToBeforeTheFirstSnap() async {
+        let harness = Harness()
+        await harness.addWindows()
+        await harness.drop()
+        let moved = Self.leftHalf.offsetBy(dx: 600, dy: 0)
+        try? await harness.windows.setFrame(moved, of: harness.dragged)
+        await harness.drop(.rightHalf, at: moved, from: Self.leftHalf)
+        await harness.windows.focus(harness.dragged)
+        await harness.dispatcher.perform(.restore).value
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.beforeDrag)
+    }
+
+    @Test(arguments: [FakeScreens.externalAbove, FakeScreens.portraitLeft])
+    func snapsOnADisplayAboveOrLeftOfThePrimary(screen: ScreenGeometry) async {
+        let harness = Harness(screens: [FakeScreens.laptop, screen])
+        let dropped = CGRect(x: screen.frame.minX + 10, y: screen.frame.minY + 40, width: 600, height: 400)
+        await harness.addWindows(draggedFrame: dropped)
+        await harness.drop(at: dropped, on: screen)
+        let expected = ActionCalculator.targetRect(for: .leftHalf, window: dropped, screen: screen, settings: .defaults)
+        #expect(await harness.windows.frame(ofWindow: harness.dragged) == expected)
+        #expect(expected.map(screen.visibleFrame.contains) == true)
     }
 
     /// A half dropped onto the same half doesn't cycle to two-thirds: the drag has moved the window,

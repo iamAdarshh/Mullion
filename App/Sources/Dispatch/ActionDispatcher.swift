@@ -90,8 +90,8 @@ final class ActionDispatcher {
         ))
     }
 
-    /// Snaps a window the user dropped into a snap area on `screen` (PRD §6.4). *Restore* then puts
-    /// it back where it was before the drag.
+    /// Snaps a window the user dropped into a snap area on `screen` (PRD §6.4). *Restore* then puts it
+    /// back where it was before the drag, or, if Mullion had already snapped it, before that first snap.
     @discardableResult
     func perform(
         _ action: WindowAction,
@@ -116,7 +116,7 @@ final class ActionDispatcher {
     @discardableResult
     func restoreSize(ofDropped window: DroppedWindow, cursor: CGPoint) -> Task<Void, Never> {
         guard restoresSizeOnDragAway(),
-              store.hasSnap(pid: window.pid, at: window.frameBeforeDrag, tolerance: Self.frameTolerance)
+              store.hasSnap(pid: window.pid, frameBeforeDrag: window.frameBeforeDrag)
         else { return Task {} }
         return enqueue(Request(
             name: "restoreSizeAfterDrag",

@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
-- Drag to snap (in progress): while you drag a window by its title bar into a screen edge, corner, bottom third or, on ultrawide displays, a top sixth, a translucent preview in your accent colour shows where it will snap, gaps included. The preview slides between areas (with Reduce motion on, it jumps). Dropping the window snaps it there, on the display the preview was on, and *Restore* puts it back where it was before the drag. Hold ⌥ while dragging to move a window without snapping. Dragging a snapped window away and dropping it outside every snap area gives it back its size from before the snap. *Ignore “App”* in the menu stops the frontmost app's windows from snapping when dragged; shortcuts still work on them.
+- Drag to snap (in progress): while you drag a window by its title bar into a screen edge, corner, bottom third or, on ultrawide displays, a top sixth, a translucent preview in your accent colour shows where it will snap, gaps included. The preview slides between areas (with Reduce motion on, it jumps). Dropping the window snaps it there, on the display the preview was on, and *Restore* puts it back where it was before the drag (or before Mullion first snapped it). Hold ⌥ while dragging to move a window without snapping. Dragging a snapped window away and dropping it outside every snap area gives it back its size from before the snap. *Ignore “App”* in the menu stops the frontmost app's windows from snapping when dragged; shortcuts still work on them.
 
 ## [0.1.0-beta.1] - 2026-10-19
 

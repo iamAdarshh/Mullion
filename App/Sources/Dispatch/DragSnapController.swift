@@ -60,8 +60,9 @@ final class DragSnapController {
         showPreview()
     }
 
-    /// Turns snapping off while the user holds ⌥ (PRD §6.4). Takes effect at once, mid-drag: the
-    /// preview hides, or comes back when ⌥ is released, without waiting for the mouse to move.
+    /// Turns snapping off while the user holds ⌥ (PRD §6.4). Takes effect mid-drag, without waiting for
+    /// the mouse to move: the preview hides, or comes back when ⌥ is released. (While Mullion itself is
+    /// the active app, the global monitor doesn't see ⌥ change until the next mouse event.)
     func setSnappingDisabled(_ disabled: Bool) {
         guard disabled != isSnappingDisabled else { return }
         isSnappingDisabled = disabled

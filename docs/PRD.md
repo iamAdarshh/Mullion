@@ -104,7 +104,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - Up to 6 displays are supported and tested. More may work.
 
 ### 6.6 macOS tiling conflict (Sequoia 15+)
-- On launch, and when Settings opens, Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag` and `EnableTopTilingByEdgeDrag`.
+- On launch, and when Settings opens, Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag`, `EnableTopTilingByEdgeDrag` and `EnableTilingOptionAccelerator`. The last one ("Hold ⌥ key while dragging windows to tile", on by default) makes ⌥ hand a drag to the system tiler, which clashes with ⌥ disabling Mullion's snapping, so the notice mentions it too.
 - If either is enabled and drag-to-snap is on, Mullion shows a one-time notice with **Open Desktop & Dock settings** and **Don't show again** buttons. Mullion never writes these preferences itself.
 
 ### 6.7 Menu bar

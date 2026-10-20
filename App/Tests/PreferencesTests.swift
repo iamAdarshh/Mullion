@@ -2,22 +2,32 @@ import Foundation
 import Testing
 @testable import Mullion
 
+/// Each test gets a fresh instance on one fixed, throwaway defaults suite, emptied before and after
+/// every test, so tests never touch the real preferences. A fresh suite per test would leave one empty
+/// plist per test in ~/Library/Preferences (the preferences daemon writes it even after the domain is
+/// removed); a fixed name leaves at most one. Serialized, because every test shares that suite.
+@Suite(.serialized)
 @MainActor
-struct PreferencesTests {
-    /// A throwaway defaults suite, so tests never touch the real preferences.
-    private static func makePreferences() throws -> Preferences {
-        let suite = "PreferencesTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defaults.removePersistentDomain(forName: suite)
-        return Preferences(defaults: defaults)
+final class PreferencesTests {
+    private nonisolated static let suite = "io.github.iamadarshh.mullion.tests"
+    private let preferences: Preferences
+
+    init() throws {
+        let defaults = try #require(UserDefaults(suiteName: Self.suite))
+        defaults.removePersistentDomain(forName: Self.suite)
+        preferences = Preferences(defaults: defaults)
     }
 
-    @Test func nothingIsIgnoredByDefault() throws {
-        #expect(try Self.makePreferences().ignoredBundleIDs.isEmpty)
+    deinit {
+        // Removing a domain by name works from any defaults object.
+        UserDefaults.standard.removePersistentDomain(forName: Self.suite)
     }
 
-    @Test func ignoringAnAppAndTakingItOffAgain() throws {
-        let preferences = try Self.makePreferences()
+    @Test func nothingIsIgnoredByDefault() {
+        #expect(preferences.ignoredBundleIDs.isEmpty)
+    }
+
+    @Test func ignoringAnAppAndTakingItOffAgain() {
         preferences.setIgnored(true, bundleID: "com.apple.Safari")
         preferences.setIgnored(true, bundleID: "com.apple.Notes")
         #expect(preferences.ignoredBundleIDs == ["com.apple.Safari", "com.apple.Notes"])
@@ -25,15 +35,13 @@ struct PreferencesTests {
         #expect(preferences.ignoredBundleIDs == ["com.apple.Notes"])
     }
 
-    @Test func ignoringTwiceKeepsOneEntry() throws {
-        let preferences = try Self.makePreferences()
+    @Test func ignoringTwiceKeepsOneEntry() {
         preferences.setIgnored(true, bundleID: "com.apple.Safari")
         preferences.setIgnored(true, bundleID: "com.apple.Safari")
         #expect(preferences.ignoredBundleIDs == ["com.apple.Safari"])
     }
 
-    @Test func dragAwayRestoresTheSizeByDefault() throws {
-        let preferences = try Self.makePreferences()
+    @Test func dragAwayRestoresTheSizeByDefault() {
         #expect(preferences.restoresSizeOnDragAway)
         preferences.restoresSizeOnDragAway = false
         #expect(!preferences.restoresSizeOnDragAway)

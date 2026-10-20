@@ -45,11 +45,13 @@ final class RestoreStore {
         entries[window] = entry
     }
 
-    /// Whether a window of the app with `pid` was last snapped to `frame`, within `tolerance`. Answers
-    /// without asking the app, so a drop of a window Mullion never snapped costs no AX call.
-    func hasSnap(pid: pid_t, at frame: CGRect, tolerance: CGFloat) -> Bool {
+    /// Whether a window of the app with `pid` was still where Mullion last snapped it when a drag began
+    /// at `frameBeforeDrag`. Answers without asking the app, so a drop of a window Mullion never
+    /// snapped costs no AX call.
+    func hasSnap(pid: pid_t, frameBeforeDrag: CGRect) -> Bool {
         entries.contains { window, entry in
-            window.pid == pid && entry.lastSnap?.frame.isApproximatelyEqual(to: frame, tolerance: tolerance) == true
+            guard window.pid == pid, let snap = entry.lastSnap else { return false }
+            return DragAwayPlanner.wasSnapped(at: snap.frame, frameBeforeDrag: frameBeforeDrag)
         }
     }
 

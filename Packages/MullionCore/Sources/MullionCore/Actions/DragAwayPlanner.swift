@@ -3,6 +3,20 @@ import CoreGraphics
 /// Decides what happens when the user drags a snapped window away and drops it outside every snap
 /// area: it gets its size from before the snap back, under the cursor (PRD §6.3).
 public enum DragAwayPlanner {
+    /// How far the window's origin may be from its snapped frame as a drag starts and still count as
+    /// snapped. The app reconstructs the pre-drag frame from how far the cursor had moved, which can be
+    /// a few points off for a window that lags the cursor. The size is read directly, so it stays exact.
+    public static let dragStartTolerance: CGFloat = 8
+
+    /// Whether a window whose drag began at `frameBeforeDrag` was still where Mullion snapped it.
+    public static func wasSnapped(at snapFrame: CGRect, frameBeforeDrag: CGRect) -> Bool {
+        let sizeTolerance = ActionPlanner.snapTolerance
+        return abs(snapFrame.width - frameBeforeDrag.width) <= sizeTolerance
+            && abs(snapFrame.height - frameBeforeDrag.height) <= sizeTolerance
+            && abs(snapFrame.minX - frameBeforeDrag.minX) <= dragStartTolerance
+            && abs(snapFrame.minY - frameBeforeDrag.minY) <= dragStartTolerance
+    }
+
     /// - Parameters:
     ///   - window: The window as it was dropped: `frame` is where it is now.
     ///   - frameBeforeDrag: Where the window was when the drag started.
@@ -18,7 +32,7 @@ public enum DragAwayPlanner {
         let tolerance = ActionPlanner.snapTolerance
         guard let snap = window.lastSnap,
               let restoreFrame = window.restoreFrame,
-              snap.frame.isApproximatelyEqual(to: frameBeforeDrag, tolerance: tolerance),
+              wasSnapped(at: snap.frame, frameBeforeDrag: frameBeforeDrag),
               !snap.frame.isApproximatelyEqual(to: window.frame, tolerance: tolerance),
               let screen = ScreenLocator.screen(
                   containing: CGRect(origin: cursor, size: CGSize(width: 1, height: 1)),
