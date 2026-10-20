@@ -58,6 +58,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.onAction = { [weak dispatcher] action in
             dispatcher?.perform(action)
         }
+        menuBar.ignorableApp = { Self.ignorableFrontmostApp(preferences: preferences) }
+        menuBar.onSetIgnored = { ignored, bundleID in
+            preferences.setIgnored(ignored, bundleID: bundleID)
+        }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
@@ -94,7 +98,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             screens: SystemScreens(),
             preview: OverlayController(),
             dragSettings: { .defaults },
-            actionSettings: { preferences.actionSettings }
+            actionSettings: { preferences.actionSettings },
+            isIgnored: { pid in
+                NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+                    .map(preferences.ignoredBundleIDs.contains) ?? false
+            }
         )
         let tracker = DragTracker(
             windowList: SystemWindowList(),
@@ -103,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isLeftButtonDown: { NSEvent.pressedMouseButtons & 1 != 0 }
         )
         tracker.onMoveStarted = { [weak snapper] window, cursor in
-            snapper?.dragStarted(windowFrame: window.frameBeforeDrag, at: cursor)
+            snapper?.dragStarted(window, at: cursor)
         }
         tracker.onMoved = { [weak snapper] _, cursor in snapper?.dragMoved(to: cursor) }
         tracker.onEnded = { [weak snapper, weak dispatcher] window, cursor in
@@ -118,6 +126,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationSupportsSecureRestorableState(_: NSApplication) -> Bool {
         true
+    }
+
+    /// The frontmost app for the menu's *Ignore* item. Opening Mullion's menu doesn't activate
+    /// Mullion, so this is the app the user was just in. `nil` for Mullion itself or an app without
+    /// a bundle ID, which the ignore list can't name.
+    private static func ignorableFrontmostApp(preferences: Preferences) -> MenuBarController.IgnorableApp? {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              let bundleID = app.bundleIdentifier
+        else { return nil }
+        return MenuBarController.IgnorableApp(
+            bundleID: bundleID,
+            name: app.localizedName ?? bundleID,
+            isIgnored: preferences.ignoredBundleIDs.contains(bundleID)
+        )
     }
 
     /// The frontmost app's pid, or `nil` when that's Mullion itself: never act on our own windows.

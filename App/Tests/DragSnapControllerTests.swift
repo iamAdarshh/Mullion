@@ -5,6 +5,7 @@ import Testing
 
 @MainActor
 struct DragSnapControllerTests {
+    private static let pid: pid_t = 4242
     private static let window = CGRect(x: 300, y: 200, width: 600, height: 400)
     private static let middle = CGPoint(x: 700, y: 400)
     /// The laptop's visible frame is (0, 37, 1470, 919).
@@ -15,17 +16,23 @@ struct DragSnapControllerTests {
         let preview = FakePreview()
         let controller: DragSnapController
 
-        init(_ screens: [ScreenGeometry] = [FakeScreens.laptop], actionSettings: ActionSettings = .defaults) {
+        init(
+            _ screens: [ScreenGeometry] = [FakeScreens.laptop],
+            actionSettings: ActionSettings = .defaults,
+            ignoredPIDs: Set<pid_t> = []
+        ) {
             controller = DragSnapController(
                 screens: FakeScreens(screens: screens),
                 preview: preview,
                 dragSettings: { .defaults },
-                actionSettings: { actionSettings }
+                actionSettings: { actionSettings },
+                isIgnored: { ignoredPIDs.contains($0) }
             )
         }
 
-        func start(at cursor: CGPoint = DragSnapControllerTests.middle) {
-            controller.dragStarted(windowFrame: DragSnapControllerTests.window, at: cursor)
+        func start(at cursor: CGPoint = DragSnapControllerTests.middle, pid: pid_t = DragSnapControllerTests.pid) {
+            let window = DraggedWindow(id: 7, pid: pid, frameBeforeDrag: DragSnapControllerTests.window)
+            controller.dragStarted(window, at: cursor)
         }
     }
 
@@ -161,5 +168,31 @@ struct DragSnapControllerTests {
         harness.controller.setSnappingDisabled(false)
         #expect(harness.preview.shown.isEmpty)
         #expect(harness.preview.hides == 0)
+    }
+
+    // MARK: Ignore list
+
+    @Test func anIgnoredAppNeverSnaps() {
+        let harness = Harness(ignoredPIDs: [Self.pid])
+        harness.start(at: CGPoint(x: 1, y: 400))
+        harness.controller.dragMoved(to: CGPoint(x: 1, y: 1))
+        #expect(harness.preview.shown.isEmpty)
+        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 1)) == nil)
+    }
+
+    @Test func releasingOptionDoesNotSnapAnIgnoredApp() {
+        let harness = Harness(ignoredPIDs: [Self.pid])
+        harness.controller.setSnappingDisabled(true)
+        harness.start(at: CGPoint(x: 1, y: 400))
+        harness.controller.setSnappingDisabled(false)
+        #expect(harness.controller.match == nil)
+    }
+
+    @Test func theNextDragOfAnotherAppSnapsAgain() {
+        let harness = Harness(ignoredPIDs: [Self.pid])
+        harness.start(at: CGPoint(x: 1, y: 400))
+        harness.controller.dragEnded(at: CGPoint(x: 1, y: 400))
+        harness.start(at: CGPoint(x: 1, y: 400), pid: Self.pid + 1)
+        #expect(harness.controller.match?.action == .leftHalf)
     }
 }

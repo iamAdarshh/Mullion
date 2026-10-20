@@ -11,11 +11,14 @@ final class DragSnapController {
     private let preview: any SnapPreviewing
     private let dragSettings: () -> DragSettings
     private let actionSettings: () -> ActionSettings
+    private let isIgnored: (pid_t) -> Bool
     private var dragScreens: [ScreenGeometry] = []
     private var windowFrame = CGRect.zero
     /// The cursor's last position during a window drag; `nil` when no window is being dragged.
     private var cursor: CGPoint?
     private var isSnappingDisabled = false
+    /// The dragged window's app is on the ignore list: nothing snaps for the whole drag.
+    private var isIgnoredDrag = false
 
     /// The area under the cursor, or `nil` outside every area or when no window is being dragged.
     private(set) var match: SnapMatch?
@@ -24,26 +27,31 @@ final class DragSnapController {
         screens: any ScreenProviding,
         preview: any SnapPreviewing,
         dragSettings: @escaping () -> DragSettings,
-        actionSettings: @escaping () -> ActionSettings
+        actionSettings: @escaping () -> ActionSettings,
+        isIgnored: @escaping (pid_t) -> Bool
     ) {
         self.screens = screens
         self.preview = preview
         self.dragSettings = dragSettings
         self.actionSettings = actionSettings
+        self.isIgnored = isIgnored
     }
 
-    /// - Parameter windowFrame: The dragged window's frame before the drag.
-    func dragStarted(windowFrame: CGRect, at cursor: CGPoint) {
+    func dragStarted(_ window: DraggedWindow, at cursor: CGPoint) {
+        isIgnoredDrag = isIgnored(window.pid)
+        if isIgnoredDrag {
+            Log.drag.debug("Not snapping: the app is on the ignore list")
+        }
         dragScreens = screens.screens
         preview.prepare(for: dragScreens)
-        self.windowFrame = windowFrame
+        windowFrame = window.frameBeforeDrag
         match = nil
         dragMoved(to: cursor)
     }
 
     func dragMoved(to cursor: CGPoint) {
         self.cursor = cursor
-        let next = isSnappingDisabled ? nil : SnapAreaResolver.resolve(
+        let next = isSnappingDisabled || isIgnoredDrag ? nil : SnapAreaResolver.resolve(
             cursor: cursor, screens: dragScreens, previous: match, settings: dragSettings()
         )
         guard next != match else { return }
@@ -95,6 +103,7 @@ final class DragSnapController {
     private func finish() {
         match = nil
         cursor = nil
+        isIgnoredDrag = false
         dragScreens = []
         preview.hide()
     }

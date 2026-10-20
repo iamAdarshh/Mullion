@@ -15,6 +15,9 @@
     "First Third" : {},
     "First Two-Thirds" : {},
     "Grant Accessibility access…" : {},
+    "Ignore “%@”" : {
+      "comment" : "Menu item. Windows of the named app never snap when dragged."
+    },
     "Grant Access…" : {},
     "Grow" : {},
     "Halves" : {},

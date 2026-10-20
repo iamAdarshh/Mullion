@@ -10,6 +10,7 @@ final class Preferences {
         static let almostMaximizePercent = "almostMaximizePercent"
         static let resizeStep = "resizeStep"
         static let repeatBehavior = "repeatBehavior"
+        static let ignoredBundleIDs = "ignoredBundleIDs"
     }
 
     private let defaults: UserDefaults
@@ -42,6 +43,22 @@ final class Preferences {
             defaults.set(Int((newValue.almostMaximizeFraction * 100).rounded()), forKey: Key.almostMaximizePercent)
             defaults.set(Double(newValue.resizeStep), forKey: Key.resizeStep)
             defaults.set(newValue.repeatBehavior.rawValue, forKey: Key.repeatBehavior)
+        }
+    }
+
+    /// Apps whose windows never snap when dragged, by bundle ID (PRD §6.4). Shortcuts and the menu
+    /// still act on them: those are a deliberate request for the frontmost window.
+    var ignoredBundleIDs: Set<String> {
+        get { Set(defaults.stringArray(forKey: Key.ignoredBundleIDs) ?? []) }
+        set { defaults.set(newValue.sorted(), forKey: Key.ignoredBundleIDs) }
+    }
+
+    /// Adds the app to the ignore list, or takes it off.
+    func setIgnored(_ ignored: Bool, bundleID: String) {
+        if ignored {
+            ignoredBundleIDs.insert(bundleID)
+        } else {
+            ignoredBundleIDs.remove(bundleID)
         }
     }
 }

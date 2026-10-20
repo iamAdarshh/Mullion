@@ -94,7 +94,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - An edge shared with another display is still a snap area on each side; the cursor passes through it on the way to the other display. A drop inside it, or less than 8 pt past it (hysteresis), snaps on the display the area belongs to.
 - Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
 - Holding **⌥ while dragging** temporarily disables snapping.
-- Apps on the ignore list never snap.
+- Windows of apps on the ignore list never snap when dragged. Keyboard shortcuts and menu actions still work on them, because those are a deliberate request for the frontmost window. The menu's **Ignore [frontmost app]** item adds the app to the list, and choosing it again (it shows a checkmark) takes it off.
 - AC-5: The preview appears within 1 frame (under 16 ms) of entering an area and never flickers when hovering on the boundary between two areas (use hysteresis).
 - AC-6: Snapping works on every connected display, including a display placed above or below the main display.
 
