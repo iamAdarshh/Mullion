@@ -4,9 +4,12 @@ import CoreGraphics
 /// area: it gets its size from before the snap back, under the cursor (PRD §6.3).
 public enum DragAwayPlanner {
     /// How far the window's origin may be from its snapped frame as a drag starts and still count as
-    /// snapped. The app reconstructs the pre-drag frame from how far the cursor had moved, which can be
-    /// a few points off for a window that lags the cursor. The size is read directly, so it stays exact.
-    public static let dragStartTolerance: CGFloat = 8
+    /// snapped. The app reconstructs the pre-drag frame from how far the cursor had moved, which is a
+    /// few points off on a normal grab (5.5 pt measured) and more on a quick one. The size is read
+    /// directly, so it stays exact and is the real test. A generous origin allowance can't catch a
+    /// window the user moved since the snap: moving it means dragging it, which is this very check.
+    /// The same distance after which a drag that doesn't move its window is given up.
+    public static let dragStartTolerance: CGFloat = 30
 
     /// Whether a window whose drag began at `frameBeforeDrag` was still where Mullion snapped it.
     public static func wasSnapped(at snapFrame: CGRect, frameBeforeDrag: CGRect) -> Bool {

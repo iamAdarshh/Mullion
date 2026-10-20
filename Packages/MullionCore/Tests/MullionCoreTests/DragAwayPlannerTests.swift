@@ -74,13 +74,19 @@ struct DragAwayPlannerTests {
     }
 
     @Test(arguments: [
-        CGRect(x: 9, y: 37, width: 735, height: 919),
-        CGRect(x: 0, y: 46, width: 735, height: 919),
+        CGRect(x: 31, y: 37, width: 735, height: 919),
+        CGRect(x: 0, y: 68, width: 735, height: 919),
         CGRect(x: 0, y: 37, width: 738, height: 919),
         CGRect(x: 0, y: 37, width: 735, height: 916),
     ])
     func aPreDragFrameTooFarOffIsNotSnapped(frameBeforeDrag: CGRect) {
         #expect(!DragAwayPlanner.wasSnapped(at: Self.leftHalf, frameBeforeDrag: frameBeforeDrag))
+    }
+
+    // Regression: a quick grab put the reconstructed pre-drag frame more than 8 pt from the snap, so
+    // the window kept its snapped size when dragged away.
+    @Test func aQuickGrabFarFromTheSnappedOriginStillCountsAsSnapped() {
+        #expect(DragAwayPlanner.wasSnapped(at: Self.leftHalf, frameBeforeDrag: Self.leftHalf.offsetBy(dx: -18, dy: 24)))
     }
 
     @Test func aWindowDroppedBackWhereItWasStaysSnapped() {
