@@ -51,7 +51,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [x] SwiftUI Settings with every tab in PRD §6.8
 - [x] Launch at login via `SMAppService.mainApp`
 - [x] Config export/import (versioned JSON)
-- [ ] App icon and menu bar template icon (original artwork)
+- [x] App icon and menu bar template icon (original artwork, drawn by `scripts/make-icons.swift`)
 - [ ] German localisation (stretch goal)
 - [ ] README GIF and website/GitHub Pages (optional)
 - [ ] `Makefile` release targets: `archive`, `notarize`, `dmg` (see [RELEASING.md](RELEASING.md))
