@@ -62,6 +62,47 @@ final class PreferencesTests {
         #expect(!preferences.showsMenuBarIcon)
     }
 
+    @Test func dragDefaults() {
+        #expect(preferences.dragToSnapEnabled)
+        #expect(preferences.snapModifier == .option)
+        #expect(preferences.dragSettings == .defaults)
+        #expect(preferences.previewStyle == PreviewStyle())
+        #expect(preferences.hapticFeedback)
+    }
+
+    @Test func dragSettingsRoundTrip() throws {
+        preferences.dragToSnapEnabled = false
+        preferences.snapModifier = .control
+        preferences.dragSettings = DragSettings(edgeThickness: 12, cornerSize: 40)
+        let orange = try #require(HexColor.color(from: "#FF8800"))
+        preferences.previewStyle = PreviewStyle(color: orange, opacity: 0.35)
+        preferences.hapticFeedback = false
+
+        #expect(!preferences.dragToSnapEnabled)
+        #expect(preferences.snapModifier == .control)
+        #expect(preferences.dragSettings == DragSettings(edgeThickness: 12, cornerSize: 40))
+        #expect(preferences.previewStyle.color.flatMap(HexColor.string(from:)) == "#FF8800")
+        #expect(preferences.previewStyle.opacity == 0.35)
+        #expect(!preferences.hapticFeedback)
+    }
+
+    @Test func goingBackToTheAccentColour() throws {
+        preferences.previewStyle.color = try #require(HexColor.color(from: "#FF8800"))
+        preferences.previewStyle.color = nil
+        #expect(preferences.previewStyle.color == nil)
+    }
+
+    /// Values written by hand (`defaults write`) or by an older version are clamped on read.
+    @Test func outOfRangeStoredValuesAreClamped() throws {
+        let defaults = try #require(UserDefaults(suiteName: Self.suite))
+        defaults.set(0.95, forKey: "previewOpacity")
+        defaults.set(500.0, forKey: "edgeThickness")
+        defaults.set("shift", forKey: "snapModifier")
+        #expect(preferences.previewStyle.opacity == PreviewStyle.opacityRange.upperBound)
+        #expect(preferences.dragSettings.edgeThickness == 50)
+        #expect(preferences.snapModifier == .option)
+    }
+
     /// AppKit objects follow a preference through `keepApplying`, every time it changes.
     @Test func keepApplyingRunsAgainAfterEachChange() async {
         var seen: [Bool] = []
@@ -79,6 +120,11 @@ final class PreferencesTests {
         { (prefs: Preferences) in prefs.restoresSizeOnDragAway = false },
         { (prefs: Preferences) in prefs.hidesTilingNotice = true },
         { (prefs: Preferences) in prefs.showsMenuBarIcon = false },
+        { (prefs: Preferences) in prefs.dragToSnapEnabled = false },
+        { (prefs: Preferences) in prefs.snapModifier = .control },
+        { (prefs: Preferences) in prefs.dragSettings.edgeThickness = 10 },
+        { (prefs: Preferences) in prefs.previewStyle.opacity = 0.4 },
+        { (prefs: Preferences) in prefs.hapticFeedback = false },
         { (prefs: Preferences) in prefs.setIgnored(true, bundleID: "com.apple.Safari") },
     ] as [@MainActor @Sendable (Preferences) -> Void])
     func changesAreObservable(change: @MainActor @Sendable (Preferences) -> Void) {
@@ -89,6 +135,11 @@ final class PreferencesTests {
             _ = preferences.restoresSizeOnDragAway
             _ = preferences.hidesTilingNotice
             _ = preferences.showsMenuBarIcon
+            _ = preferences.dragToSnapEnabled
+            _ = preferences.snapModifier
+            _ = preferences.dragSettings
+            _ = preferences.previewStyle
+            _ = preferences.hapticFeedback
             _ = preferences.ignoredBundleIDs
         } onChange: {
             changed.withLock { $0 = true }

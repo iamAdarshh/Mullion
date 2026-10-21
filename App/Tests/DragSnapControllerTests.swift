@@ -15,6 +15,8 @@ struct DragSnapControllerTests {
     private struct Harness {
         let preview = FakePreview()
         let controller: DragSnapController
+        /// How many times the cursor entered an area, for haptic feedback.
+        let entered = Counter()
 
         init(
             _ screens: [ScreenGeometry] = [FakeScreens.laptop],
@@ -26,7 +28,8 @@ struct DragSnapControllerTests {
                 preview: preview,
                 dragSettings: { .defaults },
                 actionSettings: { actionSettings },
-                isIgnored: { ignoredPIDs.contains($0) }
+                isIgnored: { ignoredPIDs.contains($0) },
+                enteredArea: { [entered] in entered.count += 1 }
             )
         }
 
@@ -42,6 +45,19 @@ struct DragSnapControllerTests {
         #expect(harness.controller.match == nil)
         harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
         #expect(harness.controller.match?.action == .leftHalf)
+    }
+
+    /// One haptic tap per area entered: not on every mouse move inside it, and not on leaving it.
+    @Test func reportsEachAreaEnteredOnce() {
+        let harness = Harness()
+        harness.start()
+        harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
+        harness.controller.dragMoved(to: CGPoint(x: 2, y: 420))
+        #expect(harness.entered.count == 1)
+        harness.controller.dragMoved(to: Self.middle)
+        #expect(harness.entered.count == 1)
+        harness.controller.dragMoved(to: CGPoint(x: 1469, y: 400))
+        #expect(harness.entered.count == 2)
     }
 
     @Test func endingReturnsTheAreaAndForgetsIt() {
@@ -202,4 +218,9 @@ struct DragSnapControllerTests {
         harness.start(at: CGPoint(x: 1, y: 400), pid: Self.pid + 1)
         #expect(harness.controller.match?.action == .leftHalf)
     }
+}
+
+/// Counts calls from a closure.
+private final class Counter {
+    var count = 0
 }

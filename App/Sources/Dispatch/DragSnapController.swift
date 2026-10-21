@@ -12,6 +12,7 @@ final class DragSnapController {
     private let dragSettings: () -> DragSettings
     private let actionSettings: () -> ActionSettings
     private let isIgnored: (pid_t) -> Bool
+    private let enteredArea: () -> Void
     private var dragScreens: [ScreenGeometry] = []
     private var windowFrame = CGRect.zero
     /// The cursor's last position during a window drag; `nil` when no window is being dragged.
@@ -28,13 +29,15 @@ final class DragSnapController {
         preview: any SnapPreviewing,
         dragSettings: @escaping () -> DragSettings,
         actionSettings: @escaping () -> ActionSettings,
-        isIgnored: @escaping (pid_t) -> Bool
+        isIgnored: @escaping (pid_t) -> Bool,
+        enteredArea: @escaping () -> Void = {}
     ) {
         self.screens = screens
         self.preview = preview
         self.dragSettings = dragSettings
         self.actionSettings = actionSettings
         self.isIgnored = isIgnored
+        self.enteredArea = enteredArea
     }
 
     func dragStarted(_ window: DraggedWindow, at cursor: CGPoint) {
@@ -57,12 +60,16 @@ final class DragSnapController {
         guard next != match else { return }
         match = next
         Log.drag.debug("Snap area: \(next.map(\.action.rawValue) ?? "none", privacy: .public)")
+        if next != nil {
+            enteredArea()
+        }
         showPreview()
     }
 
-    /// Turns snapping off while the user holds ⌥ (PRD §6.4). Takes effect mid-drag, without waiting for
-    /// the mouse to move: the preview hides, or comes back when ⌥ is released. (While Mullion itself is
-    /// the active app, the global monitor doesn't see ⌥ change until the next mouse event.)
+    /// Turns snapping off while the user holds the snap modifier, ⌥ by default (PRD §6.4). Takes effect mid-drag,
+    /// without waiting for
+    /// the mouse to move: the preview hides, or comes back when the key is released. (While Mullion
+    /// itself is the active app, the global monitor doesn't see the key change until the next mouse event.)
     func setSnappingDisabled(_ disabled: Bool) {
         guard disabled != isSnappingDisabled else { return }
         isSnappingDisabled = disabled
@@ -82,7 +89,7 @@ final class DragSnapController {
         case snap(SnapMatch)
         /// Dropped outside every area: a snapped window gets its size back (PRD §6.3).
         case free
-        /// ⌥ was held or the app is ignored: Mullion leaves the window alone.
+        /// The snap modifier was held or the app is ignored: Mullion leaves the window alone.
         case leaveAlone
     }
 
@@ -96,7 +103,7 @@ final class DragSnapController {
             match.map(Drop.snap) ?? .free
         }
         let area = match.map(\.action.rawValue) ?? "no area"
-        let reason = isIgnoredDrag ? " (app ignored)" : isSnappingDisabled ? " (⌥ held)" : ""
+        let reason = isIgnoredDrag ? " (app ignored)" : isSnappingDisabled ? " (modifier held)" : ""
         Log.drag.debug("Window drag ended in \(area, privacy: .public)\(reason, privacy: .public)")
         finish()
         return drop

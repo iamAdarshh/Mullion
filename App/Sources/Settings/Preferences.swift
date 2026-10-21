@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import MullionCore
 import Observation
 
@@ -18,6 +18,13 @@ final class Preferences {
         static let restoresSizeOnDragAway = "restoresSizeOnDragAway"
         static let hidesTilingNotice = "hidesTilingNotice"
         static let showsMenuBarIcon = "showsMenuBarIcon"
+        static let dragToSnap = "dragToSnap"
+        static let snapModifier = "snapModifier"
+        static let edgeThickness = "edgeThickness"
+        static let cornerSize = "cornerSize"
+        static let previewColor = "previewColor"
+        static let previewOpacity = "previewOpacity"
+        static let hapticFeedback = "hapticFeedback"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -25,6 +32,7 @@ final class Preferences {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let fallback = ActionSettings.defaults
+        let drag = DragSettings.defaults
         defaults.register(defaults: [
             Key.gap: Double(fallback.gap),
             Key.almostMaximizePercent: Int((fallback.almostMaximizeFraction * 100).rounded()),
@@ -32,6 +40,12 @@ final class Preferences {
             Key.repeatBehavior: fallback.repeatBehavior.rawValue,
             Key.restoresSizeOnDragAway: true,
             Key.showsMenuBarIcon: true,
+            Key.dragToSnap: true,
+            Key.snapModifier: SnapModifier.option.rawValue,
+            Key.edgeThickness: Double(drag.edgeThickness),
+            Key.cornerSize: Double(drag.cornerSize),
+            Key.previewOpacity: PreviewStyle.defaultOpacity,
+            Key.hapticFeedback: true,
         ])
     }
 
@@ -79,6 +93,68 @@ final class Preferences {
             return defaults.bool(forKey: Key.showsMenuBarIcon)
         }
         set { withMutation(keyPath: \.showsMenuBarIcon) { defaults.set(newValue, forKey: Key.showsMenuBarIcon) } }
+    }
+
+    /// Whether dragging a window to a screen edge snaps it (PRD §6.4, §6.8 Drag).
+    var dragToSnapEnabled: Bool {
+        get {
+            access(keyPath: \.dragToSnapEnabled)
+            return defaults.bool(forKey: Key.dragToSnap)
+        }
+        set { withMutation(keyPath: \.dragToSnapEnabled) { defaults.set(newValue, forKey: Key.dragToSnap) } }
+    }
+
+    /// The key that turns snapping off while held during a drag.
+    var snapModifier: SnapModifier {
+        get {
+            access(keyPath: \.snapModifier)
+            return defaults.string(forKey: Key.snapModifier).flatMap(SnapModifier.init(rawValue:)) ?? .option
+        }
+        set { withMutation(keyPath: \.snapModifier) { defaults.set(newValue.rawValue, forKey: Key.snapModifier) } }
+    }
+
+    /// The size of the snap areas. Out-of-range stored values are clamped by `DragSettings`.
+    var dragSettings: DragSettings {
+        get {
+            access(keyPath: \.dragSettings)
+            return DragSettings(
+                edgeThickness: defaults.double(forKey: Key.edgeThickness),
+                cornerSize: defaults.double(forKey: Key.cornerSize)
+            )
+        }
+        set {
+            withMutation(keyPath: \.dragSettings) {
+                defaults.set(Double(newValue.edgeThickness), forKey: Key.edgeThickness)
+                defaults.set(Double(newValue.cornerSize), forKey: Key.cornerSize)
+            }
+        }
+    }
+
+    /// The preview's colour and opacity. No stored colour means the system accent colour.
+    var previewStyle: PreviewStyle {
+        get {
+            access(keyPath: \.previewStyle)
+            let opacity = defaults.double(forKey: Key.previewOpacity)
+            return PreviewStyle(
+                color: defaults.string(forKey: Key.previewColor).flatMap(HexColor.color(from:)),
+                opacity: min(max(opacity, PreviewStyle.opacityRange.lowerBound), PreviewStyle.opacityRange.upperBound)
+            )
+        }
+        set {
+            withMutation(keyPath: \.previewStyle) {
+                defaults.set(newValue.color.flatMap(HexColor.string(from:)), forKey: Key.previewColor)
+                defaults.set(newValue.opacity, forKey: Key.previewOpacity)
+            }
+        }
+    }
+
+    /// A light tap on Force Touch trackpads when the cursor enters a snap area.
+    var hapticFeedback: Bool {
+        get {
+            access(keyPath: \.hapticFeedback)
+            return defaults.bool(forKey: Key.hapticFeedback)
+        }
+        set { withMutation(keyPath: \.hapticFeedback) { defaults.set(newValue, forKey: Key.hapticFeedback) } }
     }
 
     /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).

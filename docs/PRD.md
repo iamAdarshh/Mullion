@@ -74,10 +74,10 @@ If the user triggers the same half action twice in a row on the same window, and
 
 ### 6.3 Restore
 - Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
-- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding ⌥ or an ignored app leaves it alone. On by default (Settings → General, M3).
+- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding the snap modifier (⌥) or an ignored app leaves it alone. On by default (Settings → General).
 
 ### 6.4 Drag to snap
-- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect, in the accent colour and with gaps applied, exactly as the shortcut would place it. Releasing the mouse applies the action on the display the preview was on; moving out of the area hides the preview.
+- Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect, in the accent colour (or a colour and opacity chosen in Settings → Drag) and with gaps applied, exactly as the shortcut would place it. Releasing the mouse applies the action on the display the preview was on; moving out of the area hides the preview.
 - Default snap areas:
 
 | Area | Action |
@@ -93,7 +93,7 @@ If the user triggers the same half action twice in a row on the same window, and
 - On a portrait display the bottom edge snaps to the Bottom Half, because thirds run top to bottom there.
 - An edge shared with another display is still a snap area on each side; the cursor passes through it on the way to the other display. A drop inside it, or less than 8 pt past it (hysteresis), snaps on the display the area belongs to.
 - Snap areas can be remapped per area in Settings → Drag (v1.1; the defaults above ship in v1.0).
-- Holding **⌥ while dragging** temporarily disables snapping.
+- Holding **⌥ while dragging** temporarily disables snapping. Settings → Drag can change the key to ⌃ (⇧ is kept for Zones, and ⌘ is macOS's gesture for dragging background windows). On a Force Touch trackpad, entering a snap area gives a light haptic tap (on by default).
 - Windows of apps on the ignore list never snap when dragged. Keyboard shortcuts and menu actions still work on them, because those are a deliberate request for the frontmost window. The menu's **Ignore [frontmost app]** item adds the app to the list, and choosing it again (it shows a checkmark) takes it off.
 - Known limitations (v1):
   - Dialogs and floating panels show a preview but don't snap at the drop: Mullion only moves standard windows, and during the drag it can't tell them apart.
@@ -108,7 +108,8 @@ If the user triggers the same half action twice in a row on the same window, and
 - Up to 6 displays are supported and tested. More may work.
 
 ### 6.6 macOS tiling conflict (Sequoia 15+)
-- At launch, once Accessibility is granted (and, from M3, when Settings opens), Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag`, `EnableTopTilingByEdgeDrag` and `EnableTilingOptionAccelerator`. The last one ("Hold ⌥ key while dragging windows to tile", on by default) makes ⌥ hand a drag to the system tiler, which clashes with ⌥ disabling Mullion's snapping, so the notice mentions it too.
+- At launch, once Accessibility is granted, and whenever the Settings window comes to the front, Mullion reads the `com.apple.WindowManager` preferences `EnableTilingByEdgeDrag`, `EnableTopTilingByEdgeDrag` and `EnableTilingOptionAccelerator`. The last one ("Hold ⌥ key while dragging windows to tile", on by default) makes ⌥ hand a drag to the system tiler, which clashes with ⌥ disabling Mullion's snapping, so the notice mentions it too, but only while ⌥ is Mullion's snap modifier. While drag to snap is off there is nothing to clash with, and no notice.
+- Settings → Drag shows the same text as a warning at the top for as long as a conflicting setting is on, with **Open Desktop & Dock Settings**. It ignores *Don't Show Again* and clears as soon as the user comes back with tiling off.
 - A key that is missing means the user never changed it, so it has its macOS default (on). Before macOS 15 there is no system tiling and nothing is read.
 - If any is enabled and drag-to-snap is on, Mullion shows a notice at most once per launch, and only once Accessibility is granted, so it never covers the welcome window. It names the macOS settings to turn off and has **Open Desktop & Dock Settings** and **Don't Show Again** buttons. *Don't Show Again* hides it for good; after *Open Desktop & Dock Settings*, the next launch checks again and stays quiet if tiling is now off. Mullion never writes these preferences itself.
 
@@ -122,7 +123,7 @@ If the user triggers the same half action twice in a row on the same window, and
 |---|---|
 | General | Launch at login, show menu bar icon, repeated-shortcut behaviour, gap size, almost-maximize %, restore-on-drag-away |
 | Shortcuts | A recorder for every action, *Restore defaults*, conflict warnings |
-| Drag | Drag-to-snap on/off, the ⌥ modifier to disable snapping, area thickness, preview colour and opacity, haptic feedback (Force Touch trackpads) |
+| Drag | Drag-to-snap on/off, the modifier to disable snapping (⌥ or ⌃), edge and corner size, preview colour and opacity, haptic feedback (Force Touch trackpads) |
 | Ignored Apps | Add or remove apps by bundle ID, with a picker for running apps |
 | Advanced | Export and import the config as JSON, reset everything, verbose logging, open the logs folder |
 | About | Version, licence, GitHub link, acknowledgements |
