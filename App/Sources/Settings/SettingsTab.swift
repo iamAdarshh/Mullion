@@ -6,6 +6,7 @@ enum SettingsTab: String, CaseIterable {
     case shortcuts
     case drag
     case ignoredApps
+    case advanced
     case about
 
     var title: String {
@@ -14,6 +15,7 @@ enum SettingsTab: String, CaseIterable {
         case .shortcuts: String(localized: "Shortcuts", comment: "Settings tab")
         case .drag: String(localized: "Drag", comment: "Settings tab")
         case .ignoredApps: String(localized: "Ignored Apps", comment: "Settings tab")
+        case .advanced: String(localized: "Advanced", comment: "Settings tab")
         case .about: String(localized: "About", comment: "Settings tab")
         }
     }
@@ -25,6 +27,7 @@ enum SettingsTab: String, CaseIterable {
         case .shortcuts: "keyboard"
         case .drag: "hand.draw"
         case .ignoredApps: "nosign"
+        case .advanced: "gearshape.2"
         case .about: "info.circle"
         }
     }

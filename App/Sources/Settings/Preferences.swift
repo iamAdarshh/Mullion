@@ -157,6 +157,21 @@ final class Preferences {
         set { withMutation(keyPath: \.hapticFeedback) { defaults.set(newValue, forKey: Key.hapticFeedback) } }
     }
 
+    /// Puts every preference back to its default (PRD §6.8 Advanced). Through the setters, so
+    /// everything observing them sees the change.
+    func resetAll() {
+        actionSettings = .defaults
+        restoresSizeOnDragAway = true
+        showsMenuBarIcon = true
+        dragToSnapEnabled = true
+        snapModifier = .option
+        dragSettings = .defaults
+        previewStyle = PreviewStyle()
+        hapticFeedback = true
+        hidesTilingNotice = false
+        ignoredBundleIDs = []
+    }
+
     /// The macOS tiling settings that clash with these preferences (PRD §6.6).
     func relevantTilingConflicts(_ conflicts: SystemTilingCheck.Conflicts) -> SystemTilingCheck.Conflicts {
         conflicts.relevant(dragToSnap: dragToSnapEnabled, snapModifier: snapModifier)

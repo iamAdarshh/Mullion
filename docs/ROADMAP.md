@@ -50,7 +50,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 ## M3: Settings and v1.0 release
 - [ ] SwiftUI Settings with every tab in PRD §6.8
 - [x] Launch at login via `SMAppService.mainApp`
-- [ ] Config export/import (versioned JSON)
+- [x] Config export/import (versioned JSON)
 - [ ] App icon and menu bar template icon (original artwork)
 - [ ] German localisation (stretch goal)
 - [ ] README GIF and website/GitHub Pages (optional)

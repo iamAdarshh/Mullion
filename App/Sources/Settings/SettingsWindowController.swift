@@ -57,6 +57,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         case .shortcuts: AnyView(ShortcutsSettingsView())
         case .drag: AnyView(DragSettingsView(preferences: model.preferences, tiling: model.tiling))
         case .ignoredApps: AnyView(IgnoredAppsSettingsView(preferences: model.preferences))
+        case .advanced: AnyView(AdvancedSettingsView(preferences: model.preferences, shortcuts: ShortcutStore()))
         case .about: AnyView(AboutSettingsView())
         }
         let hosting = NSHostingController(rootView: view.frame(width: SettingsLayout.width))
