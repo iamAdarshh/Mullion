@@ -43,3 +43,43 @@ jobs:
 
       - name: Build and test app
         run: make test-app
+
+      # For the older-macos job. Tarred: artifact uploads drop the symlinks inside framework bundles.
+      - name: Build app tests for older macOS
+        run: |
+          make build-for-testing
+          tar -czf app-tests.tgz -C build/DerivedData/Build Products
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app-tests
+          path: app-tests.tgz
+          retention-days: 1
+
+  # Runs the app tests built above on the oldest macOS versions Mullion supports (M3 exit criteria).
+  # Only the tests run there; they're compiled once, by the macos-26 job's Xcode.
+  older-macos:
+    needs: build-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: app-tests
+
+      # The newest Xcode on the image, whose xcodebuild can read the test run file.
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+          sw_vers
+
+      - name: Run app tests
+        run: |
+          tar -xzf app-tests.tgz
+          xcodebuild test-without-building -xctestrun "$(ls Products/*.xctestrun | head -1)" -destination 'platform=macOS'
