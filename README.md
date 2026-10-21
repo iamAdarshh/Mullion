@@ -10,13 +10,13 @@
 
 <!-- TODO: demo GIF (drag to snap + ⌃⌥← cycling), ~800 px wide: ![Mullion demo](docs/images/demo.gif) -->
 
-> **Status: beta.** Keyboard snapping and drag to snap work today. Settings, launch at login and the first stable release (v1.0) come next. Custom zones and workspaces follow in v2. See the [roadmap](docs/ROADMAP.md).
+> **Status: v1.0, stable.** Keyboard snapping, drag to snap and a full Settings window. Custom zones and workspaces come in v2; see the [roadmap](docs/ROADMAP.md).
 
 ---
 
 ## Features
 
-✅ available in the beta · 🛠️ next (v1.0) · 🗺️ planned (v2)
+✅ available now · 🗺️ planned (v2)
 
 ### v1: Snapping essentials
 - ✅ **Keyboard snapping:** halves, quarters, thirds, two-thirds, sixths, maximize, almost maximize, maximize height, center, grow, shrink and restore
@@ -26,7 +26,7 @@
 - ✅ **Multi-display:** send a window to the next or previous display; a snapped window keeps its position (left half stays left half). Displays placed beside, above or below each other are supported.
 - ✅ **Menu bar:** every action with its shortcut, plus *Ignore “App”* to stop an app's windows from snapping when dragged
 - ✅ **Works with apps that have a minimum or fixed size:** the window stays on the target display instead of spilling off it
-- 🛠️ **Settings window:** remap shortcuts, gaps between windows, launch at login, ignore list, import/export
+- ✅ **Settings window:** remap any shortcut (sixths included), gaps between windows, launch at login, hide the menu bar icon, drag areas and preview colour, ignored apps, and export/import of your settings
 
 | Default shortcut | Action |
 |---|---|
