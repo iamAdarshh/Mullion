@@ -51,25 +51,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let tilingNotice = Self.makeTilingNotice(preferences: preferences)
         self.tilingNotice = tilingNotice
 
-        accessibility.onTrustChange = { [weak menuBar, weak hotkeys, weak dragMonitor, weak tilingNotice] trusted in
+        accessibility.onTrustChange = { [weak self, weak menuBar, weak hotkeys, weak tilingNotice] trusted in
             menuBar?.setAccessibilityTrusted(trusted)
             hotkeys?.setEnabled(trusted)
-            dragMonitor?.setEnabled(trusted && preferences.dragToSnapEnabled)
+            self?.applyPreferences()
             if trusted {
                 tilingNotice?.showLater()
             }
         }
         Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
         menuBar.onOpenSettings = { [weak self] tab in self?.showSettings(tab: tab) }
-        keepApplying { [weak menuBar] in menuBar?.setIconVisible(preferences.showsMenuBarIcon) }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
         hotkeys.setEnabled(accessibility.isTrusted)
-        // Also follows the Drag tab's on/off switch.
-        keepApplying { [weak accessibility, weak dragMonitor] in
-            dragMonitor?.setEnabled((accessibility?.isTrusted ?? false) && preferences.dragToSnapEnabled)
-        }
+        // Again on every change to the preferences it reads.
+        keepApplying { [weak self] in self?.applyPreferences() }
         accessibility.start()
         if accessibility.isTrusted {
             tilingNotice.showLater()
@@ -77,10 +74,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Opening Mullion while it's running (from Finder, Spotlight or Launchpad) opens Settings: the
-    /// only way back when the menu bar icon is hidden (PRD §6.7).
+    /// only way back when the menu bar icon is hidden (PRD §6.7). Without Accessibility access it
+    /// opens the welcome window instead, which explains how to grant it.
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
-        showSettings()
+        if let accessibility, !accessibility.isTrusted {
+            accessibility.showOnboarding()
+        } else {
+            showSettings()
+        }
         return false
+    }
+
+    /// Shows or hides the menu bar icon and starts or stops following drags, from the preferences and
+    /// the Accessibility state. Called at launch, on every trust change and on every preference change.
+    private func applyPreferences() {
+        guard let preferences, let accessibility else { return }
+        let trusted = accessibility.isTrusted
+        menuBar?.setIconVisible(preferences.showsMenuBarIcon(isTrusted: trusted))
+        dragMonitor?.setEnabled(trusted && preferences.watchesDrags)
     }
 
     /// Opens the Settings window, creating it the first time.
@@ -120,16 +131,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the welcome window.
     private static func makeTilingNotice(preferences: Preferences) -> TilingNoticeCoordinator {
         TilingNoticeCoordinator(
-            conflicts: {
-                var conflicts = SystemTilingCheck.live().conflicts()
-                // ⌥-drag tiling only clashes while ⌥ is Mullion's modifier too.
-                if preferences.snapModifier != .option {
-                    conflicts.remove(.optionTiling)
-                }
-                return conflicts
-            },
-            // Nothing to clash with while drag to snap is off (PRD §6.6).
-            isHidden: { preferences.hidesTilingNotice || !preferences.dragToSnapEnabled },
+            conflicts: { preferences.relevantTilingConflicts(SystemTilingCheck.live().conflicts()) },
+            isHidden: { preferences.hidesTilingNotice },
             hide: { preferences.hidesTilingNotice = true },
             presenter: TilingNoticeAlert(),
             openSettings: { TilingNoticeAlert.openSettings() }
@@ -170,6 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
                     .map(preferences.ignoredBundleIDs.contains) ?? false
             },
+            isSnappingEnabled: { preferences.dragToSnapEnabled },
             enteredArea: {
                 // Does nothing without a Force Touch trackpad.
                 if preferences.hapticFeedback {

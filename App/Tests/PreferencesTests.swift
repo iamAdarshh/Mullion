@@ -103,6 +103,21 @@ final class PreferencesTests {
         #expect(preferences.snapModifier == .option)
     }
 
+    /// Drag-away restore needs the drag monitor even with drag to snap off (PRD §6.3).
+    @Test(arguments: [(true, true, true), (true, false, true), (false, true, true), (false, false, false)])
+    func watchesDragsForSnappingOrRestoring(dragToSnap: Bool, restores: Bool, watches: Bool) {
+        preferences.dragToSnapEnabled = dragToSnap
+        preferences.restoresSizeOnDragAway = restores
+        #expect(preferences.watchesDrags == watches)
+    }
+
+    /// A hidden icon comes back while Accessibility is missing, so its warning can't be hidden (PRD §6.9.3).
+    @Test func theIconIsShownWhileUntrusted() {
+        preferences.showsMenuBarIcon = false
+        #expect(!preferences.showsMenuBarIcon(isTrusted: true))
+        #expect(preferences.showsMenuBarIcon(isTrusted: false))
+    }
+
     /// AppKit objects follow a preference through `keepApplying`, every time it changes.
     @Test func keepApplyingRunsAgainAfterEachChange() async {
         var seen: [Bool] = []

@@ -43,4 +43,23 @@ struct SystemTilingCheckTests {
     @Test func macOS14HasNoTiling() {
         #expect(check([:], hasSystemTiling: false).isEmpty)
     }
+
+    struct RelevantCase: Sendable {
+        let dragToSnap: Bool
+        let modifier: SnapModifier
+        let expected: SystemTilingCheck.Conflicts
+    }
+
+    /// ⌥-drag tiling only clashes while ⌥ is Mullion's modifier, and nothing clashes with drag to
+    /// snap off (PRD §6.6). The launch notice and Settings → Drag both use this.
+    @Test(arguments: [
+        RelevantCase(dragToSnap: true, modifier: .option, expected: [.edgeTiling, .optionTiling]),
+        RelevantCase(dragToSnap: true, modifier: .control, expected: [.edgeTiling]),
+        RelevantCase(dragToSnap: false, modifier: .option, expected: []),
+        RelevantCase(dragToSnap: false, modifier: .control, expected: []),
+    ])
+    func relevantConflicts(_ test: RelevantCase) {
+        let all: SystemTilingCheck.Conflicts = [.edgeTiling, .optionTiling]
+        #expect(all.relevant(dragToSnap: test.dragToSnap, snapModifier: test.modifier) == test.expected)
+    }
 }

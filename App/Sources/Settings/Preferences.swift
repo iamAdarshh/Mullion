@@ -157,6 +157,23 @@ final class Preferences {
         set { withMutation(keyPath: \.hapticFeedback) { defaults.set(newValue, forKey: Key.hapticFeedback) } }
     }
 
+    /// The macOS tiling settings that clash with these preferences (PRD §6.6).
+    func relevantTilingConflicts(_ conflicts: SystemTilingCheck.Conflicts) -> SystemTilingCheck.Conflicts {
+        conflicts.relevant(dragToSnap: dragToSnapEnabled, snapModifier: snapModifier)
+    }
+
+    /// Whether Mullion needs to follow window drags: to snap them, or to give a snapped window its
+    /// size back when it's dragged away, which also works with drag to snap off (PRD §6.3).
+    var watchesDrags: Bool {
+        dragToSnapEnabled || restoresSizeOnDragAway
+    }
+
+    /// Whether the menu bar icon is shown. While Accessibility access is missing it always is, so
+    /// its warning and *Grant Accessibility access…* item can't be hidden (PRD §6.9.3).
+    func showsMenuBarIcon(isTrusted: Bool) -> Bool {
+        showsMenuBarIcon || !isTrusted
+    }
+
     /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).
     var hidesTilingNotice: Bool {
         get {

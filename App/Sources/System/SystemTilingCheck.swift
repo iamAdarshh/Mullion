@@ -13,6 +13,13 @@ struct SystemTilingCheck {
         /// "Hold ⌥ key while dragging windows to tile": the ⌥ that turns Mullion's snapping off hands
         /// the drag to macOS instead.
         static let optionTiling = Conflicts(rawValue: 1 << 1)
+
+        /// The conflicts that matter with these settings (PRD §6.6): none while drag to snap is off,
+        /// and ⌥-drag tiling only while ⌥ is Mullion's snap modifier too.
+        func relevant(dragToSnap: Bool, snapModifier: SnapModifier) -> Conflicts {
+            guard dragToSnap else { return [] }
+            return snapModifier == .option ? self : subtracting(.optionTiling)
+        }
     }
 
     static let domain = "com.apple.WindowManager"

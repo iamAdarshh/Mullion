@@ -74,7 +74,7 @@ If the user triggers the same half action twice in a row on the same window, and
 
 ### 6.3 Restore
 - Before the first Mullion-initiated move of a window, its frame is saved in memory. It is keyed by the window's `AXUIElement` and cleared when the window closes (detected when its app quits, or after the next action on that app, when its element reports it is gone) or after a successful restore. Mullion never queries other apps' windows just to clean up, so a frozen app can't slow down shortcuts. If the saved frame's display has been disconnected, the window is restored onto the nearest connected display.
-- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding the snap modifier (⌥) or an ignored app leaves it alone. On by default (Settings → General).
+- `restore` brings back that frame. Manually dragging a snapped window away from its snapped position and dropping it outside every snap area restores its original *size* under the cursor: the cursor stays the same fraction of the way across the title bar, the top edge stays where it was dropped, and the window is kept inside the visible frame. Unlike Magnet and Windows, the size changes at the drop rather than as the drag starts, because the app ignores Accessibility requests while it runs its window-drag loop. Afterwards the window counts as unsnapped and *Restore* does nothing. Dropping it back where it was keeps it snapped; holding the snap modifier (⌥) or an ignored app leaves it alone. On by default (Settings → General). It works with drag to snap turned off too: Mullion still follows drags, without previews or snapping.
 
 ### 6.4 Drag to snap
 - Dragging a window by its title bar into a snap area shows a translucent **preview overlay** of the target rect, in the accent colour (or a colour and opacity chosen in Settings → Drag) and with gaps applied, exactly as the shortcut would place it. Releasing the mouse applies the action on the display the preview was on; moving out of the area hides the preview.
@@ -116,7 +116,7 @@ If the user triggers the same half action twice in a row on the same window, and
 ### 6.7 Menu bar
 - A template icon (monochrome, shaped like a mullion window glyph).
 - The menu lists every action grouped by type (Halves, Quarters, Thirds, Sixths, Other, Displays), each with its shortcut shown on the right. It also has **Ignore [frontmost app]**, **Settings…**, **About**, and **Quit**.
-- The menu bar icon can be hidden. If it is, launching the app a second time opens Settings.
+- The menu bar icon can be hidden. If it is, launching the app a second time opens Settings. While Accessibility access is missing, the icon is shown anyway (with its warning, §6.9.3), and launching the app again opens the welcome window instead.
 
 ### 6.8 Settings window (SwiftUI)
 | Tab | Contents |

@@ -33,12 +33,18 @@ struct GeneralSettingsView: View {
                     Text("Do nothing").tag(ActionSettings.RepeatBehavior.doNothing)
                 }
                 LabeledContent("Gap between windows") {
-                    SliderWithValue(value: $preferences.actionSettings.gap, range: 0 ... 40, step: 1) {
+                    SliderWithValue(
+                        "Gap between windows",
+                        value: $preferences.actionSettings.gap,
+                        range: 0 ... 40,
+                        step: 1
+                    ) {
                         Text("\(Int($0)) pt", comment: "A size in points, for example 8 pt")
                     }
                 }
                 LabeledContent("Almost Maximize size") {
                     SliderWithValue(
+                        "Almost Maximize size",
                         value: $preferences.actionSettings.almostMaximizeFraction,
                         range: 0.5 ... 1,
                         step: 0.01

@@ -9,7 +9,7 @@ struct DragSettingsView: View {
 
     var body: some View {
         Form {
-            if preferences.dragToSnapEnabled, !conflicts.isEmpty {
+            if !conflicts.isEmpty {
                 TilingWarning(conflicts: conflicts)
             }
             Section {
@@ -21,12 +21,23 @@ struct DragSettingsView: View {
                         ForEach(SnapModifier.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     LabeledContent("Edge size") {
-                        SliderWithValue(value: $preferences.dragSettings.edgeThickness, range: 1 ... 50, step: 1) {
+                        SliderWithValue(
+                            "Edge size",
+                            value: $preferences.dragSettings.edgeThickness,
+                            range: 1 ... 50,
+                            step: 1
+                        ) {
                             Text("\(Int($0)) pt", comment: "A size in points, for example 8 pt")
                         }
                     }
                     LabeledContent("Corner size") {
-                        SliderWithValue(value: $preferences.dragSettings.cornerSize, range: 1 ... 100, step: 1) {
+                        // Never smaller than the edge: starting the slider there shows the limit.
+                        SliderWithValue(
+                            "Corner size",
+                            value: $preferences.dragSettings.cornerSize,
+                            range: preferences.dragSettings.edgeThickness ... 100,
+                            step: 1
+                        ) {
                             Text("\(Int($0)) pt", comment: "A size in points, for example 8 pt")
                         }
                     }
@@ -38,6 +49,7 @@ struct DragSettingsView: View {
                     }
                     LabeledContent("Opacity") {
                         SliderWithValue(
+                            "Opacity",
                             value: $preferences.previewStyle.opacity,
                             range: PreviewStyle.opacityRange,
                             step: 0.05
@@ -53,13 +65,8 @@ struct DragSettingsView: View {
         .settingsForm()
     }
 
-    /// ⌥-drag tiling only matters while ⌥ is Mullion's modifier too.
     private var conflicts: SystemTilingCheck.Conflicts {
-        var conflicts = tiling.conflicts
-        if preferences.snapModifier != .option {
-            conflicts.remove(.optionTiling)
-        }
-        return conflicts
+        preferences.relevantTilingConflicts(tiling.conflicts)
     }
 
     private var usesAccentColor: Binding<Bool> {

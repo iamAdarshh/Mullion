@@ -21,7 +21,8 @@ struct DragSnapControllerTests {
         init(
             _ screens: [ScreenGeometry] = [FakeScreens.laptop],
             actionSettings: ActionSettings = .defaults,
-            ignoredPIDs: Set<pid_t> = []
+            ignoredPIDs: Set<pid_t> = [],
+            snapping: Bool = true
         ) {
             controller = DragSnapController(
                 screens: FakeScreens(screens: screens),
@@ -29,7 +30,8 @@ struct DragSnapControllerTests {
                 dragSettings: { .defaults },
                 actionSettings: { actionSettings },
                 isIgnored: { ignoredPIDs.contains($0) },
-                enteredArea: { [entered] in entered.count += 1 }
+                isSnappingEnabled: { snapping },
+                enteredArea: { [entered] in entered.calls += 1 }
             )
         }
 
@@ -53,11 +55,24 @@ struct DragSnapControllerTests {
         harness.start()
         harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
         harness.controller.dragMoved(to: CGPoint(x: 2, y: 420))
-        #expect(harness.entered.count == 1)
+        #expect(harness.entered.calls == 1)
         harness.controller.dragMoved(to: Self.middle)
-        #expect(harness.entered.count == 1)
+        #expect(harness.entered.calls == 1)
         harness.controller.dragMoved(to: CGPoint(x: 1469, y: 400))
-        #expect(harness.entered.count == 2)
+        #expect(harness.entered.calls == 2)
+    }
+
+    /// Drag to snap off: no preview and no snap, but the drop is still free, so a snapped window
+    /// dragged away gets its size back (PRD §6.3).
+    @Test func snappingOffStillAllowsDragAwayRestore() {
+        let harness = Harness(snapping: false)
+        harness.start()
+        harness.controller.dragMoved(to: CGPoint(x: 1, y: 400))
+        #expect(harness.controller.match == nil)
+        #expect(harness.controller.dragEnded(at: CGPoint(x: 1, y: 400)) == .free)
+        #expect(harness.preview.prepared.isEmpty)
+        #expect(harness.preview.shown.isEmpty)
+        #expect(harness.entered.calls == 0)
     }
 
     @Test func endingReturnsTheAreaAndForgetsIt() {
@@ -222,5 +237,5 @@ struct DragSnapControllerTests {
 
 /// Counts calls from a closure.
 private final class Counter {
-    var count = 0
+    var calls = 0
 }

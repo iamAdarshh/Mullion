@@ -13,6 +13,7 @@ final class DragSnapController {
     private let actionSettings: () -> ActionSettings
     private let isIgnored: (pid_t) -> Bool
     private let enteredArea: () -> Void
+    private let isSnappingEnabled: () -> Bool
     private var dragScreens: [ScreenGeometry] = []
     private var windowFrame = CGRect.zero
     /// The cursor's last position during a window drag; `nil` when no window is being dragged.
@@ -20,6 +21,9 @@ final class DragSnapController {
     private var isSnappingDisabled = false
     /// The dragged window's app is on the ignore list: nothing snaps for the whole drag.
     private var isIgnoredDrag = false
+    /// Drag to snap is off in Settings: no preview and no snap, but a free drop can still restore the
+    /// window's size (PRD §6.3).
+    private var isSnappingOff = false
 
     /// The area under the cursor, or `nil` outside every area or when no window is being dragged.
     private(set) var match: SnapMatch?
@@ -30,6 +34,7 @@ final class DragSnapController {
         dragSettings: @escaping () -> DragSettings,
         actionSettings: @escaping () -> ActionSettings,
         isIgnored: @escaping (pid_t) -> Bool,
+        isSnappingEnabled: @escaping () -> Bool = { true },
         enteredArea: @escaping () -> Void = {}
     ) {
         self.screens = screens
@@ -38,6 +43,7 @@ final class DragSnapController {
         self.actionSettings = actionSettings
         self.isIgnored = isIgnored
         self.enteredArea = enteredArea
+        self.isSnappingEnabled = isSnappingEnabled
     }
 
     func dragStarted(_ window: DraggedWindow, at cursor: CGPoint) {
@@ -45,8 +51,11 @@ final class DragSnapController {
         if isIgnoredDrag {
             Log.drag.debug("Not snapping: the app is on the ignore list")
         }
+        isSnappingOff = !isSnappingEnabled()
         dragScreens = screens.screens
-        preview.prepare(for: dragScreens)
+        if !isSnappingOff {
+            preview.prepare(for: dragScreens)
+        }
         windowFrame = window.frameBeforeDrag
         match = nil
         dragMoved(to: cursor)
@@ -54,7 +63,7 @@ final class DragSnapController {
 
     func dragMoved(to cursor: CGPoint) {
         self.cursor = cursor
-        let next = isSnappingDisabled || isIgnoredDrag ? nil : SnapAreaResolver.resolve(
+        let next = isSnappingOff || isSnappingDisabled || isIgnoredDrag ? nil : SnapAreaResolver.resolve(
             cursor: cursor, screens: dragScreens, previous: match, settings: dragSettings()
         )
         guard next != match else { return }
@@ -87,7 +96,8 @@ final class DragSnapController {
     enum Drop: Equatable {
         /// Dropped in a snap area: snap there.
         case snap(SnapMatch)
-        /// Dropped outside every area: a snapped window gets its size back (PRD §6.3).
+        /// Dropped outside every area, or drag to snap is off: a snapped window gets its size back
+        /// (PRD §6.3).
         case free
         /// The snap modifier was held or the app is ignored: Mullion leaves the window alone.
         case leaveAlone
@@ -128,6 +138,7 @@ final class DragSnapController {
         match = nil
         cursor = nil
         isIgnoredDrag = false
+        isSnappingOff = false
         dragScreens = []
         preview.hide()
     }
