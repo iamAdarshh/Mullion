@@ -10,7 +10,12 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Launch at login", isOn: Binding(get: { loginItem.isEnabled }, set: loginItem.setEnabled))
+                // A closure, not `set: loginItem.setEnabled`: Swift 6.3 (Xcode 26, used by CI) crashes
+                // generating the thunk for a main-actor method passed as a binding's setter.
+                Toggle(
+                    "Launch at login",
+                    isOn: Binding(get: { loginItem.isEnabled }, set: { loginItem.setEnabled($0) })
+                )
                 if loginItem.needsApproval {
                     LabeledContent {
                         Button("Open Login Items Settings") { loginItem.openSystemSettings() }
