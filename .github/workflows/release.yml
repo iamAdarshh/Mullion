@@ -19,7 +19,8 @@ jobs:
   release:
     runs-on: macos-26
     timeout-minutes: 45
-    # Runs only after you approve it (environment protection, set up by scripts/protect-repo.sh).
+    # Runs only after you approve it: Settings → Environments → release has you as required reviewer
+    # and allows only v* tags.
     # Signing and notarization secrets go in this environment, never in repo-wide secrets.
     environment: release
     permissions:

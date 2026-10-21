@@ -18,7 +18,7 @@ Versioning follows [SemVer](https://semver.org). The tag format is `vMAJOR.MINOR
 
 ## Releasing through CI (preferred)
 Pushing a `v*` tag runs `.github/workflows/release.yml`, so the published files are built from exactly the tagged commit on a clean runner, not on your Mac.
-1. The workflow waits for your approval: *Actions → Release → Review deployments → release → Approve*. This is the `release` environment's protection (set up by `scripts/protect-repo.sh`), and it's where signing secrets will live once there is a Developer ID.
+1. The workflow waits for your approval: *Actions → Release → Review deployments → release → Approve*. This is the `release` environment's protection (*Settings → Environments → release*: you as required reviewer, deployment limited to `v*` tags), and it's where signing secrets will live once there is a Developer ID.
 2. It checks that the tag matches `MARKETING_VERSION` (a `-beta.N` suffix is allowed), runs the tests, then builds with `make archive` and `make dmg`. It also makes a ZIP (`ditto`, for Homebrew and future auto-updates) and `checksums.txt`.
 3. It creates a **draft** release. The notes are the matching `CHANGELOG.md` section plus the install note and the checksums, and tags with a `-` are marked as pre-releases.
 4. Download the DMG from the draft and smoke test it (step 8), then click **Publish release**.
