@@ -56,11 +56,29 @@ final class PreferencesTests {
         #expect(preferences.hidesTilingNotice)
     }
 
+    @Test func theMenuBarIconIsShownByDefault() {
+        #expect(preferences.showsMenuBarIcon)
+        preferences.showsMenuBarIcon = false
+        #expect(!preferences.showsMenuBarIcon)
+    }
+
+    /// AppKit objects follow a preference through `keepApplying`, every time it changes.
+    @Test func keepApplyingRunsAgainAfterEachChange() async {
+        var seen: [Bool] = []
+        keepApplying { [preferences] in seen.append(preferences.showsMenuBarIcon) }
+        preferences.showsMenuBarIcon = false
+        await Task.yield()
+        preferences.showsMenuBarIcon = true
+        await Task.yield()
+        #expect(seen == [true, false, true])
+    }
+
     /// The values live in `UserDefaults`, so observation only works if every accessor reports itself.
     @Test(arguments: [
         { (prefs: Preferences) in prefs.actionSettings.gap = 12 },
         { (prefs: Preferences) in prefs.restoresSizeOnDragAway = false },
         { (prefs: Preferences) in prefs.hidesTilingNotice = true },
+        { (prefs: Preferences) in prefs.showsMenuBarIcon = false },
         { (prefs: Preferences) in prefs.setIgnored(true, bundleID: "com.apple.Safari") },
     ] as [@MainActor @Sendable (Preferences) -> Void])
     func changesAreObservable(change: @MainActor @Sendable (Preferences) -> Void) {
@@ -70,6 +88,7 @@ final class PreferencesTests {
             _ = preferences.actionSettings
             _ = preferences.restoresSizeOnDragAway
             _ = preferences.hidesTilingNotice
+            _ = preferences.showsMenuBarIcon
             _ = preferences.ignoredBundleIDs
         } onChange: {
             changed.withLock { $0 = true }

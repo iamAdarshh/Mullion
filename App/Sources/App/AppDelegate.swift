@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var dragSnapper: DragSnapController?
     private var tilingNotice: TilingNoticeCoordinator?
     private var settings: SettingsWindowController?
+    private var preferences: Preferences?
+    private let loginItem = LoginItem()
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -31,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings: { AXPermission.openSystemSettings() }
         )
         let preferences = Preferences()
+        self.preferences = preferences
         // One queue for every AX call, so a drag and a hotkey can never race on a window (ARCHITECTURE §7).
         let windows = AXQueue()
         let dispatcher = Self.makeDispatcher(windows: windows, preferences: preferences, accessibility: accessibility)
@@ -57,7 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
-        menuBar.onOpenSettings = { [weak self] in self?.showSettings(preferences: preferences) }
+        menuBar.onOpenSettings = { [weak self] in self?.showSettings() }
+        keepApplying { [weak menuBar] in menuBar?.setIconVisible(preferences.showsMenuBarIcon) }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
@@ -69,9 +73,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Opening Mullion while it's running (from Finder, Spotlight or Launchpad) opens Settings: the
+    /// only way back when the menu bar icon is hidden (PRD §6.7).
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+        showSettings()
+        return false
+    }
+
     /// Opens the Settings window, creating it the first time.
-    private func showSettings(preferences: Preferences) {
-        let settings = settings ?? SettingsWindowController(preferences: preferences)
+    private func showSettings() {
+        guard let preferences else { return }
+        let settings = settings ?? SettingsWindowController(preferences: preferences, loginItem: loginItem)
         self.settings = settings
         settings.present()
     }

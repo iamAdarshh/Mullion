@@ -1,12 +1,31 @@
 import MullionCore
 import SwiftUI
 
-/// The General tab (PRD §6.8): how actions size windows, and what happens on repeat and drag-away.
+/// The General tab (PRD §6.8): startup and the menu bar icon, how actions size windows, and what
+/// happens on repeat and drag-away.
 struct GeneralSettingsView: View {
     @Bindable var preferences: Preferences
+    let loginItem: LoginItem
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Launch at login", isOn: Binding(get: { loginItem.isEnabled }, set: loginItem.setEnabled))
+                if loginItem.needsApproval {
+                    LabeledContent {
+                        Button("Open Login Items Settings") { loginItem.openSystemSettings() }
+                    } label: {
+                        Text("Mullion is turned off in Login Items.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Toggle(isOn: $preferences.showsMenuBarIcon) {
+                    Text("Show in menu bar")
+                    if !preferences.showsMenuBarIcon {
+                        Text("To get back to Settings, open Mullion again from the Applications folder.")
+                    }
+                }
+            }
             Section {
                 Picker("Repeating a half shortcut", selection: $preferences.actionSettings.repeatBehavior) {
                     Text("Cycle ½, ⅔, ⅓").tag(ActionSettings.RepeatBehavior.cycleSizes)

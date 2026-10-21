@@ -17,6 +17,7 @@ final class Preferences {
         static let ignoredBundleIDs = "ignoredBundleIDs"
         static let restoresSizeOnDragAway = "restoresSizeOnDragAway"
         static let hidesTilingNotice = "hidesTilingNotice"
+        static let showsMenuBarIcon = "showsMenuBarIcon"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -30,6 +31,7 @@ final class Preferences {
             Key.resizeStep: Double(fallback.resizeStep),
             Key.repeatBehavior: fallback.repeatBehavior.rawValue,
             Key.restoresSizeOnDragAway: true,
+            Key.showsMenuBarIcon: true,
         ])
     }
 
@@ -67,6 +69,16 @@ final class Preferences {
             newValue,
             forKey: Key.restoresSizeOnDragAway
         ) } }
+    }
+
+    /// Whether Mullion's icon is in the menu bar (PRD §6.7). When it's hidden, opening Mullion again
+    /// opens Settings.
+    var showsMenuBarIcon: Bool {
+        get {
+            access(keyPath: \.showsMenuBarIcon)
+            return defaults.bool(forKey: Key.showsMenuBarIcon)
+        }
+        set { withMutation(keyPath: \.showsMenuBarIcon) { defaults.set(newValue, forKey: Key.showsMenuBarIcon) } }
     }
 
     /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).

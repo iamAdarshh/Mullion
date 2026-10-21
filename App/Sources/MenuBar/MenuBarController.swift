@@ -59,6 +59,12 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
         statusItem.button?.toolTip = description
     }
 
+    /// Shows or hides the icon (PRD §6.7). Hidden, the menu is out of reach until it's shown again
+    /// from Settings.
+    func setIconVisible(_ visible: Bool) {
+        statusItem.isVisible = visible
+    }
+
     func menuWillOpen(_: NSMenu) {
         onMenuWillOpen?()
         updateIgnoreItem()

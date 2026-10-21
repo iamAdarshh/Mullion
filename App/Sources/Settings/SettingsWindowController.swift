@@ -6,11 +6,14 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSWindowController {
     private let tabs = NSTabViewController()
+    private let loginItem: LoginItem
 
-    init(preferences: Preferences) {
+    init(preferences: Preferences, loginItem: LoginItem) {
+        self.loginItem = loginItem
         tabs.tabStyle = .toolbar
         for tab in SettingsTab.allCases {
-            let item = NSTabViewItem(viewController: Self.content(for: tab, preferences: preferences))
+            let content = Self.content(for: tab, preferences: preferences, loginItem: loginItem)
+            let item = NSTabViewItem(viewController: content)
             item.label = tab.title
             item.image = NSImage(systemSymbolName: tab.symbol, accessibilityDescription: tab.title)
             item.identifier = tab.rawValue
@@ -32,6 +35,8 @@ final class SettingsWindowController: NSWindowController {
     /// Shows the window in front of other apps, on `tab` if given. Mullion is a menu bar agent, so
     /// it must activate itself.
     func present(tab: SettingsTab? = nil) {
+        // The user may have changed this in System Settings since the window was last open.
+        loginItem.refresh()
         if let tab, let index = SettingsTab.allCases.firstIndex(of: tab) {
             tabs.selectedTabViewItemIndex = index
         }
@@ -42,9 +47,13 @@ final class SettingsWindowController: NSWindowController {
         NSApp.activate()
     }
 
-    private static func content(for tab: SettingsTab, preferences: Preferences) -> NSViewController {
+    private static func content(
+        for tab: SettingsTab,
+        preferences: Preferences,
+        loginItem: LoginItem
+    ) -> NSViewController {
         let view = switch tab {
-        case .general: AnyView(GeneralSettingsView(preferences: preferences))
+        case .general: AnyView(GeneralSettingsView(preferences: preferences, loginItem: loginItem))
         }
         let hosting = NSHostingController(rootView: view.frame(width: SettingsLayout.width))
         // The tab view controller passes the selected tab's title on to the window.
