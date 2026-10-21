@@ -5,10 +5,11 @@
 |---|---|---|---|
 | MullionCore unit tests | Swift Testing (`import Testing`) | `make test-core` (`swift test --package-path Packages/MullionCore`) | ✅ |
 | App logic tests (with fakes) | Swift Testing via `xcodebuild test` | `make test-app` | ✅ |
+| App logic tests on macOS 15 | The same tests, built on macOS 26 and run with `xcodebuild test-without-building` | `make build-for-testing`, then `make test-without-building XCTESTRUN=…` | ✅ (`older-macos` job) |
 | Lint and format | SwiftLint, SwiftFormat (`--lint`) | `make lint` | ✅ |
 | Manual matrix | A human (or Claude, following the `manual-test` skill) | see below | ❌ |
 
-`make test` runs core and app tests.
+`make test` runs core and app tests. CI can't run the app tests on macOS 14 (the current Swift Testing won't load there), so macOS 14 relies on the manual matrix.
 
 ## Unit-test conventions
 - One test file per source file: `ActionCalculator.swift` → `ActionCalculatorTests.swift`.
