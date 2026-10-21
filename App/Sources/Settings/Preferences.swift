@@ -1,9 +1,13 @@
 import Foundation
 import MullionCore
+import Observation
 
-/// Typed access to Mullion's scalar preferences in `UserDefaults` (ARCHITECTURE §8).
-/// The Settings window that edits these arrives in M3; until then the defaults apply.
+/// Typed access to Mullion's scalar preferences in `UserDefaults` (ARCHITECTURE §8), edited in the
+/// Settings window. Observable, so SwiftUI views update when a value changes. The values live in
+/// `UserDefaults`, not in stored properties, so each one reports its reads (`access`) and writes
+/// (`withMutation`) to the observation registrar itself.
 @MainActor
+@Observable
 final class Preferences {
     private enum Key {
         static let gap = "gap"
@@ -15,7 +19,7 @@ final class Preferences {
         static let hidesTilingNotice = "hidesTilingNotice"
     }
 
-    private let defaults: UserDefaults
+    @ObservationIgnored private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -32,6 +36,7 @@ final class Preferences {
     /// The settings every action uses. Out-of-range stored values are clamped by `ActionSettings`.
     var actionSettings: ActionSettings {
         get {
+            access(keyPath: \.actionSettings)
             let behavior = defaults.string(forKey: Key.repeatBehavior)
                 .flatMap(ActionSettings.RepeatBehavior.init(rawValue:)) ?? ActionSettings.defaults.repeatBehavior
             return ActionSettings(
@@ -42,31 +47,47 @@ final class Preferences {
             )
         }
         set {
-            defaults.set(Double(newValue.gap), forKey: Key.gap)
-            defaults.set(Int((newValue.almostMaximizeFraction * 100).rounded()), forKey: Key.almostMaximizePercent)
-            defaults.set(Double(newValue.resizeStep), forKey: Key.resizeStep)
-            defaults.set(newValue.repeatBehavior.rawValue, forKey: Key.repeatBehavior)
+            withMutation(keyPath: \.actionSettings) {
+                defaults.set(Double(newValue.gap), forKey: Key.gap)
+                defaults.set(Int((newValue.almostMaximizeFraction * 100).rounded()), forKey: Key.almostMaximizePercent)
+                defaults.set(Double(newValue.resizeStep), forKey: Key.resizeStep)
+                defaults.set(newValue.repeatBehavior.rawValue, forKey: Key.repeatBehavior)
+            }
         }
     }
 
     /// Whether a snapped window dragged away and dropped outside every snap area gets its size from
     /// before the snap back (PRD §6.3, §6.8 General).
     var restoresSizeOnDragAway: Bool {
-        get { defaults.bool(forKey: Key.restoresSizeOnDragAway) }
-        set { defaults.set(newValue, forKey: Key.restoresSizeOnDragAway) }
+        get {
+            access(keyPath: \.restoresSizeOnDragAway)
+            return defaults.bool(forKey: Key.restoresSizeOnDragAway)
+        }
+        set { withMutation(keyPath: \.restoresSizeOnDragAway) { defaults.set(
+            newValue,
+            forKey: Key.restoresSizeOnDragAway
+        ) } }
     }
 
     /// Whether the user chose *Don't Show Again* on the macOS tiling notice (PRD §6.6).
     var hidesTilingNotice: Bool {
-        get { defaults.bool(forKey: Key.hidesTilingNotice) }
-        set { defaults.set(newValue, forKey: Key.hidesTilingNotice) }
+        get {
+            access(keyPath: \.hidesTilingNotice)
+            return defaults.bool(forKey: Key.hidesTilingNotice)
+        }
+        set { withMutation(keyPath: \.hidesTilingNotice) { defaults.set(newValue, forKey: Key.hidesTilingNotice) } }
     }
 
     /// Apps whose windows never snap when dragged, by bundle ID (PRD §6.4). Shortcuts and the menu
     /// still act on them: those are a deliberate request for the frontmost window.
     var ignoredBundleIDs: Set<String> {
-        get { Set(defaults.stringArray(forKey: Key.ignoredBundleIDs) ?? []) }
-        set { defaults.set(newValue.sorted(), forKey: Key.ignoredBundleIDs) }
+        get {
+            access(keyPath: \.ignoredBundleIDs)
+            return Set(defaults.stringArray(forKey: Key.ignoredBundleIDs) ?? [])
+        }
+        set {
+            withMutation(keyPath: \.ignoredBundleIDs) { defaults.set(newValue.sorted(), forKey: Key.ignoredBundleIDs) }
+        }
     }
 
     /// Adds the app to the ignore list, or takes it off.

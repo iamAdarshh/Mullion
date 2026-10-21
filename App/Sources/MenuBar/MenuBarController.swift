@@ -13,6 +13,8 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     var onAction: ((WindowAction) -> Void)?
     /// The app the *Ignore* item is about, asked each time the menu opens. `nil` hides the item.
     var ignorableApp: (() -> IgnorableApp?)?
+    /// Called when the user chooses *Settings…*.
+    var onOpenSettings: (() -> Void)?
     /// Called when the user puts an app on the ignore list (`true`) or takes it off, with its bundle ID.
     var onSetIgnored: ((Bool, String) -> Void)?
 
@@ -90,8 +92,13 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
         menu.addItem(ignoreItem)
         menu.addItem(ignoreSeparator)
 
-        // No action until the Settings window exists (M3), so AppKit shows it disabled.
-        menu.addItem(withTitle: String(localized: "Settings…"), action: nil, keyEquivalent: ",")
+        let settings = NSMenuItem(
+            title: String(localized: "Settings…"),
+            action: #selector(openSettings),
+            keyEquivalent: ","
+        )
+        settings.target = self
+        menu.addItem(settings)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(
@@ -135,6 +142,10 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     @objc private func toggleIgnored(_ sender: NSMenuItem) {
         guard let bundleID = sender.representedObject as? String else { return }
         onSetIgnored?(sender.state != .on, bundleID)
+    }
+
+    @objc private func openSettings() {
+        onOpenSettings?()
     }
 
     @objc private func grantAccess() {

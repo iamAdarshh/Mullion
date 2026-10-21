@@ -12,6 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Hold ⌥ while dragging to move a window without snapping.
 - *Ignore “App”* in the menu stops the frontmost app's windows from snapping when dragged; shortcuts still work on them.
 - On macOS 15 and later, if macOS's own window tiling is on (edge tiling, or “Hold ⌥ key while dragging windows to tile”), Mullion explains the conflict once per launch, with buttons to open Desktop & Dock settings or not show the notice again.
+- *Settings…* (⌘,) opens the Settings window. **General**: what repeating a half shortcut does, the gap between windows, the Almost Maximize size, the Grow and Shrink step, and whether dragging a snapped window away restores its size. Changes apply immediately.
 
 ## [0.1.0-beta.1] - 2026-10-19
 

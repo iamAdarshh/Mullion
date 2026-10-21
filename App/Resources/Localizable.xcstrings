@@ -1,8 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld pt" : {
+      "comment" : "A size in points, for example 8 pt"
+    },
     "Allow Mullion to arrange your windows" : {},
     "Almost Maximize" : {},
+    "Almost Maximize size" : {},
     "Bottom Center Sixth" : {},
     "Bottom Half" : {},
     "Bottom Left" : {},
@@ -11,15 +15,22 @@
     "Bottom Right Sixth" : {},
     "Center" : {},
     "Center Third" : {},
+    "Cycle ½, ⅔, ⅓" : {},
     "Displays" : {},
+    "Do nothing" : {},
     "Don't Show Again" : {
       "comment" : "Button: never show the macOS tiling notice again."
     },
     "First Third" : {},
     "First Two-Thirds" : {},
+    "Gap between windows" : {},
+    "General" : {
+      "comment" : "Settings tab"
+    },
     "Grant Accessibility access…" : {},
     "Grant Access…" : {},
     "Grow" : {},
+    "Grow and Shrink step" : {},
     "Halves" : {},
     "Holding ⌥ while dragging tiles the window with macOS instead of moving it without snapping. In Desktop & Dock, turn off “Hold ⌥ key while dragging windows to tile”." : {
       "comment" : "Notice text when macOS ⌥-drag tiling is on. The quoted name is a macOS setting title."
@@ -34,6 +45,7 @@
     "Maximize Height" : {},
     "Move to Next Display" : {},
     "Move to Previous Display" : {},
+    "Move to next display" : {},
     "Mullion" : {},
     "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
     "Mullion: Accessibility access needed" : {},
@@ -44,7 +56,9 @@
     "Other" : {},
     "Quarters" : {},
     "Quit Mullion" : {},
+    "Repeating a half shortcut" : {},
     "Restore" : {},
+    "Restore a snapped window's size when it's dragged away" : {},
     "Right Half" : {},
     "Settings…" : {},
     "Shrink" : {},

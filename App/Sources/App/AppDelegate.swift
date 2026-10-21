@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var dragMonitor: DragMonitor?
     private var dragSnapper: DragSnapController?
     private var tilingNotice: TilingNoticeCoordinator?
+    private var settings: SettingsWindowController?
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -56,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
+        menuBar.onOpenSettings = { [weak self] in self?.showSettings(preferences: preferences) }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
@@ -65,6 +67,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if accessibility.isTrusted {
             tilingNotice.showLater()
         }
+    }
+
+    /// Opens the Settings window, creating it the first time.
+    private func showSettings(preferences: Preferences) {
+        let settings = settings ?? SettingsWindowController(preferences: preferences)
+        self.settings = settings
+        settings.present()
     }
 
     private static func connect(

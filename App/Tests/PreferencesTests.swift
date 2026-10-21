@@ -1,4 +1,7 @@
 import Foundation
+import MullionCore
+import Observation
+import os
 import Testing
 @testable import Mullion
 
@@ -51,5 +54,37 @@ final class PreferencesTests {
         #expect(!preferences.hidesTilingNotice)
         preferences.hidesTilingNotice = true
         #expect(preferences.hidesTilingNotice)
+    }
+
+    /// The values live in `UserDefaults`, so observation only works if every accessor reports itself.
+    @Test(arguments: [
+        { (prefs: Preferences) in prefs.actionSettings.gap = 12 },
+        { (prefs: Preferences) in prefs.restoresSizeOnDragAway = false },
+        { (prefs: Preferences) in prefs.hidesTilingNotice = true },
+        { (prefs: Preferences) in prefs.setIgnored(true, bundleID: "com.apple.Safari") },
+    ] as [@MainActor @Sendable (Preferences) -> Void])
+    func changesAreObservable(change: @MainActor @Sendable (Preferences) -> Void) {
+        // `onChange` is `@Sendable`, so the flag needs a lock even though it runs on this thread.
+        let changed = OSAllocatedUnfairLock(initialState: false)
+        withObservationTracking {
+            _ = preferences.actionSettings
+            _ = preferences.restoresSizeOnDragAway
+            _ = preferences.hidesTilingNotice
+            _ = preferences.ignoredBundleIDs
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+        change(preferences)
+        #expect(changed.withLock { $0 })
+    }
+
+    @Test func actionSettingsRoundTrip() {
+        preferences.actionSettings.gap = 12
+        preferences.actionSettings.almostMaximizeFraction = 0.8
+        preferences.actionSettings.resizeStep = 50
+        preferences.actionSettings.repeatBehavior = .moveToNextDisplay
+        #expect(preferences.actionSettings == ActionSettings(
+            gap: 12, almostMaximizeFraction: 0.8, resizeStep: 50, repeatBehavior: .moveToNextDisplay
+        ))
     }
 }
