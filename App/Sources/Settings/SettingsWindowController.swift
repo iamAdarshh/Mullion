@@ -54,6 +54,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private static func content(for tab: SettingsTab, model: SettingsModel) -> NSViewController {
         let view = switch tab {
         case .general: AnyView(GeneralSettingsView(preferences: model.preferences, loginItem: model.loginItem))
+        case .shortcuts: AnyView(ShortcutsSettingsView())
         case .drag: AnyView(DragSettingsView(preferences: model.preferences, tiling: model.tiling))
         case .ignoredApps: AnyView(IgnoredAppsSettingsView(preferences: model.preferences))
         }

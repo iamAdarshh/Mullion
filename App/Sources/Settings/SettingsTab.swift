@@ -3,12 +3,14 @@ import Foundation
 /// A tab of the Settings window (PRD §6.8), in toolbar order.
 enum SettingsTab: String, CaseIterable {
     case general
+    case shortcuts
     case drag
     case ignoredApps
 
     var title: String {
         switch self {
         case .general: String(localized: "General", comment: "Settings tab")
+        case .shortcuts: String(localized: "Shortcuts", comment: "Settings tab")
         case .drag: String(localized: "Drag", comment: "Settings tab")
         case .ignoredApps: String(localized: "Ignored Apps", comment: "Settings tab")
         }
@@ -18,6 +20,7 @@ enum SettingsTab: String, CaseIterable {
     var symbol: String {
         switch self {
         case .general: "gearshape"
+        case .shortcuts: "keyboard"
         case .drag: "hand.draw"
         case .ignoredApps: "nosign"
         }

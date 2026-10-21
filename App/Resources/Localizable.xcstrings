@@ -29,6 +29,7 @@
       "comment" : "Settings tab"
     },
     "Edge size" : {},
+    "Every shortcut you changed goes back to its default." : {},
     "First Third" : {},
     "First Two-Thirds" : {},
     "Gap between windows" : {},
@@ -80,9 +81,15 @@
     "Quit Mullion" : {},
     "Repeating a half shortcut" : {},
     "Restore" : {},
+    "Restore Defaults" : {},
+    "Restore Defaults…" : {},
     "Restore a snapped window's size when it's dragged away" : {},
+    "Restore the default shortcuts?" : {},
     "Right Half" : {},
     "Settings…" : {},
+    "Shortcuts" : {
+      "comment" : "Settings tab"
+    },
     "Show in menu bar" : {},
     "Shrink" : {},
     "Sixths" : {},
@@ -91,6 +98,9 @@
       "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
     },
     "Thirds" : {},
+    "This shortcut is already used by “%@”." : {
+      "comment" : "Recording a shortcut another Mullion action has. The name is an action, such as Left Half."
+    },
     "To get back to Settings, open Mullion again from the Applications folder." : {},
     "Top Center Sixth" : {},
     "Top Half" : {},

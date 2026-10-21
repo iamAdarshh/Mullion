@@ -16,6 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Launch at login (Settings → General), managed by macOS, so it also shows in System Settings → General → Login Items.
 - The menu bar icon can be hidden in Settings → General. Opening Mullion again while it's running opens Settings.
 - **Settings → Drag**: turn drag to snap off, use ⌃ instead of ⌥ to move a window without snapping, change the size of the edge and corner areas, pick the preview's colour and opacity, and turn off the haptic tap on Force Touch trackpads. It also warns, for as long as it applies, when macOS's own tiling is on.
+- **Settings → Shortcuts**: change the shortcut for any action, including the sixths, which have none by default. A shortcut another action already uses is refused, and *Restore Defaults…* puts them all back.
 - **Settings → Ignored Apps**: see and edit the apps whose windows never snap when dragged, adding running apps or any app from the Applications folder.
 
 ## [0.1.0-beta.1] - 2026-10-19
