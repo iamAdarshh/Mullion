@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-21
+
 ### Added
 - Mullion's own app icon and menu bar icon: a window split by a mullion, its left pane snapped.
 - Drag to snap: drag a window by its title bar into a screen edge, a corner, a bottom third or, on ultrawide displays, a top sixth, and a translucent preview in your accent colour shows where it will go, gaps included. Release to snap it there, on the display the preview was on. The preview slides between areas (with Reduce motion on, it jumps).
