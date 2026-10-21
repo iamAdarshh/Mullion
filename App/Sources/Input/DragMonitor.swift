@@ -8,8 +8,11 @@ import MullionCore
 /// It never sees events sent to Mullion itself, so Mullion's own windows are never dragged.
 @MainActor
 final class DragMonitor {
-    /// Called with whether ⌥ is held, on every mouse and modifier event: ⌥ turns snapping off (PRD §6.4).
-    var onOptionKey: ((Bool) -> Void)?
+    /// Called with whether the snap modifier (⌥ by default) is held, on every mouse and modifier
+    /// event: holding it turns snapping off (PRD §6.4).
+    var onSnapModifier: ((Bool) -> Void)?
+    /// The key `onSnapModifier` reports on, read on every event so a change in Settings applies at once.
+    var snapModifier: () -> NSEvent.ModifierFlags = { .option }
 
     private let tracker: DragTracker
     private var monitor: Any?
@@ -21,7 +24,7 @@ final class DragMonitor {
     /// Starts or stops watching. Stopped while Accessibility is revoked, since nothing could be snapped.
     func setEnabled(_ enabled: Bool) {
         if enabled, monitor == nil {
-            // `.flagsChanged` so that pressing or releasing ⌥ while holding a window still takes effect.
+            // `.flagsChanged` so that pressing or releasing the modifier while holding a window still takes effect.
             monitor = addMonitor(for: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .flagsChanged])
             Log.drag.info("Drag monitor started")
         } else if !enabled, let monitor {
@@ -40,14 +43,14 @@ final class DragMonitor {
             // The event's own position, already in Quartz (AX) space. `NSEvent.mouseLocation` would be
             // where the cursor is when this handler runs, which can be later.
             let location = event.cgEvent?.location
-            let isOptionHeld = event.modifierFlags.contains(.option)
+            let flags = event.modifierFlags
             // Global monitor handlers are called on the main thread.
-            MainActor.assumeIsolated { self?.handle(type, at: location, isOptionHeld: isOptionHeld) }
+            MainActor.assumeIsolated { self?.handle(type, at: location, flags: flags) }
         }
     }
 
-    private func handle(_ type: NSEvent.EventType, at location: CGPoint?, isOptionHeld: Bool) {
-        onOptionKey?(isOptionHeld)
+    private func handle(_ type: NSEvent.EventType, at location: CGPoint?, flags: NSEvent.ModifierFlags) {
+        onSnapModifier?(flags.contains(snapModifier()))
         guard type != .flagsChanged, let point = location ?? Self.cursorLocation() else { return }
         switch type {
         case .leftMouseDown: tracker.mouseDown(at: point)

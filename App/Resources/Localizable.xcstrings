@@ -1,8 +1,19 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld pt" : {
+      "comment" : "A size in points, for example 8 pt"
+    },
+    "A free, open-source window manager for macOS." : {},
+    "About" : {
+      "comment" : "Settings tab"
+    },
+    "About Mullion" : {},
+    "Acknowledgements" : {},
+    "Add App" : {},
     "Allow Mullion to arrange your windows" : {},
     "Almost Maximize" : {},
+    "Almost Maximize size" : {},
     "Bottom Center Sixth" : {},
     "Bottom Half" : {},
     "Bottom Left" : {},
@@ -11,45 +22,98 @@
     "Bottom Right Sixth" : {},
     "Center" : {},
     "Center Third" : {},
+    "Choose from Applications…" : {},
+    "Colour" : {},
+    "Corner size" : {},
+    "Cycle ½, ⅔, ⅓" : {},
     "Displays" : {},
+    "Do nothing" : {},
     "Don't Show Again" : {
       "comment" : "Button: never show the macOS tiling notice again."
     },
+    "Drag" : {
+      "comment" : "Settings tab"
+    },
+    "Edge size" : {},
+    "Every shortcut you changed goes back to its default." : {},
     "First Third" : {},
     "First Two-Thirds" : {},
+    "Gap between windows" : {},
+    "General" : {
+      "comment" : "Settings tab"
+    },
+    "GitHub" : {},
     "Grant Accessibility access…" : {},
     "Grant Access…" : {},
     "Grow" : {},
+    "Grow and Shrink step" : {},
     "Halves" : {},
+    "Haptic feedback on Force Touch trackpads" : {},
+    "Hold to move without snapping" : {},
     "Holding ⌥ while dragging tiles the window with macOS instead of moving it without snapping. In Desktop & Dock, turn off “Hold ⌥ key while dragging windows to tile”." : {
       "comment" : "Notice text when macOS ⌥-drag tiling is on. The quoted name is a macOS setting title."
+    },
+    "Ignore" : {
+      "comment" : "Open panel button: adds the chosen apps to the ignore list"
     },
     "Ignore “%@”" : {
       "comment" : "Menu item. Windows of the named app never snap when dragged."
     },
+    "Ignored Apps" : {
+      "comment" : "Settings tab"
+    },
     "Last Third" : {},
     "Last Two-Thirds" : {},
+    "Launch at login" : {},
     "Left Half" : {},
+    "Licence" : {},
+    "MIT" : {
+      "comment" : "The MIT licence"
+    },
     "Maximize" : {},
     "Maximize Height" : {},
     "Move to Next Display" : {},
     "Move to Previous Display" : {},
+    "Move to next display" : {},
     "Mullion" : {},
+    "Mullion is turned off in Login Items." : {},
     "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
     "Mullion: Accessibility access needed" : {},
+    "No apps are ignored." : {},
+    "Opacity" : {},
     "Open Desktop & Dock Settings" : {
       "comment" : "Button: opens System Settings so the user can turn macOS tiling off."
     },
+    "Open Login Items Settings" : {},
     "Open System Settings" : {},
     "Other" : {},
+    "Preview" : {},
     "Quarters" : {},
     "Quit Mullion" : {},
+    "Repeating a half shortcut" : {},
     "Restore" : {},
+    "Restore Defaults" : {},
+    "Restore Defaults…" : {},
+    "Restore a snapped window's size when it's dragged away" : {},
+    "Restore the default shortcuts?" : {},
     "Right Half" : {},
     "Settings…" : {},
+    "Shortcuts" : {
+      "comment" : "Settings tab"
+    },
+    "Show in menu bar" : {},
     "Shrink" : {},
     "Sixths" : {},
+    "Snap windows dragged to a screen edge" : {},
+    "Source code" : {},
+    "Stop ignoring %@" : {
+      "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
+    },
     "Thirds" : {},
+    "This shortcut is already used by “%@”." : {
+      "comment" : "Recording a shortcut another Mullion action has. The name is an action, such as Left Half."
+    },
+    "To get back to Settings, open Mullion again from the Applications folder." : {},
     "Top Center Sixth" : {},
     "Top Half" : {},
     "Top Left" : {},
@@ -57,13 +121,24 @@
     "Top Right" : {},
     "Top Right Sixth" : {},
     "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
+    "Use accent colour" : {},
+    "Version %@" : {
+      "comment" : "For example: Version 1.0.0 (12)"
+    },
     "Waiting for access…" : {},
     "Welcome to Mullion" : {},
+    "Windows of these apps never snap when dragged. Keyboard shortcuts still work." : {},
     "macOS is also tiling windows" : {
       "comment" : "Title of the notice shown when macOS window tiling is on."
     },
     "macOS tiles windows you drag to the screen edges or the menu bar, so macOS and Mullion both act on the same drag. In Desktop & Dock, turn off “Drag windows to screen edges to tile” and “Drag windows to menu bar to fill screen”." : {
       "comment" : "Notice text when macOS edge tiling is on. The quoted names are macOS setting titles."
+    },
+    "⌃ Control" : {
+      "comment" : "The Control key"
+    },
+    "⌥ Option" : {
+      "comment" : "The Option key"
     }
   },
   "version" : "1.0"

@@ -42,7 +42,8 @@ struct TilingNoticeAlert: TilingNoticePresenting {
         NSWorkspace.shared.open(url)
     }
 
-    private static func message(for conflicts: SystemTilingCheck.Conflicts) -> String {
+    /// The notice's text, also shown in Settings → Drag.
+    static func message(for conflicts: SystemTilingCheck.Conflicts) -> String {
         var paragraphs: [String] = []
         if conflicts.contains(.edgeTiling) {
             paragraphs.append(String(

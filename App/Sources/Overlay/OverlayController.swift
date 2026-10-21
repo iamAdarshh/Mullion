@@ -13,10 +13,17 @@ final class OverlayController: SnapPreviewing {
     private static let fadeDuration: TimeInterval = 0.12
     private static let slideDuration: TimeInterval = 0.15
 
+    private let style: () -> PreviewStyle
+
     private var panels: [String: PreviewPanel] = [:]
     private var visibleScreenID: String?
     /// Read with the screens at drag start, so panel frames and the screens agree for the whole drag.
     private var space: CoordinateSpace?
+
+    /// `style` is read on every preview, so a change in Settings shows on the next drag.
+    init(style: @escaping () -> PreviewStyle = { PreviewStyle() }) {
+        self.style = style
+    }
 
     func prepare(for screens: [ScreenGeometry]) {
         space = Self.primarySpace()
@@ -41,7 +48,12 @@ final class OverlayController: SnapPreviewing {
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         let wasVisible = visibleScreenID == screen.id
         // The view is flipped, so the screen-local AX rect places the preview directly.
-        panel.preview(screen.localRect(rect), slide: wasVisible && !reduceMotion, duration: Self.slideDuration)
+        panel.preview(
+            screen.localRect(rect),
+            style: style(),
+            slide: wasVisible && !reduceMotion,
+            duration: Self.slideDuration
+        )
         if !wasVisible {
             panel.fadeIn(duration: Self.fadeDuration)
         }
@@ -109,15 +121,14 @@ private final class PreviewPanel: NSPanel {
     }
 
     /// Moves the preview to `rect`, in the view's flipped coordinates.
-    func preview(_ rect: CGRect, slide: Bool, duration: TimeInterval) {
-        // Read the accent colour each time: the user can change it while Mullion runs.
-        let accent = NSColor.controlAccentColor
+    func preview(_ rect: CGRect, style: PreviewStyle, slide: Bool, duration: TimeInterval) {
+        let color = style.resolvedColor
         CATransaction.begin()
         CATransaction.setDisableActions(!slide)
         CATransaction.setAnimationDuration(duration)
         previewLayer.frame = rect
-        previewLayer.backgroundColor = accent.withAlphaComponent(0.2).cgColor
-        previewLayer.borderColor = accent.withAlphaComponent(0.6).cgColor
+        previewLayer.backgroundColor = color.withAlphaComponent(style.opacity).cgColor
+        previewLayer.borderColor = color.withAlphaComponent(style.borderOpacity).cgColor
         CATransaction.commit()
     }
 

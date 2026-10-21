@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var dragMonitor: DragMonitor?
     private var dragSnapper: DragSnapController?
     private var tilingNotice: TilingNoticeCoordinator?
+    private var settings: SettingsWindowController?
+    private var preferences: Preferences?
+    private let loginItem = LoginItem()
 
     /// True when the app is hosting unit tests. Skip all UI and permission prompts then,
     /// otherwise CI would hang on the Accessibility prompt.
@@ -30,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings: { AXPermission.openSystemSettings() }
         )
         let preferences = Preferences()
+        self.preferences = preferences
         // One queue for every AX call, so a drag and a hotkey can never race on a window (ARCHITECTURE §7).
         let windows = AXQueue()
         let dispatcher = Self.makeDispatcher(windows: windows, preferences: preferences, accessibility: accessibility)
@@ -47,24 +51,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let tilingNotice = Self.makeTilingNotice(preferences: preferences)
         self.tilingNotice = tilingNotice
 
-        accessibility.onTrustChange = { [weak menuBar, weak hotkeys, weak dragMonitor, weak tilingNotice] trusted in
+        accessibility.onTrustChange = { [weak self, weak menuBar, weak hotkeys, weak tilingNotice] trusted in
             menuBar?.setAccessibilityTrusted(trusted)
             hotkeys?.setEnabled(trusted)
-            dragMonitor?.setEnabled(trusted)
+            self?.applyPreferences()
             if trusted {
                 tilingNotice?.showLater()
             }
         }
         Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
+        menuBar.onOpenSettings = { [weak self] tab in self?.showSettings(tab: tab) }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
         hotkeys.start()
         hotkeys.setEnabled(accessibility.isTrusted)
-        dragMonitor.setEnabled(accessibility.isTrusted)
+        // Again on every change to the preferences it reads.
+        keepApplying { [weak self] in self?.applyPreferences() }
         accessibility.start()
         if accessibility.isTrusted {
             tilingNotice.showLater()
         }
+    }
+
+    /// Opening Mullion while it's running (from Finder, Spotlight or Launchpad) opens Settings: the
+    /// only way back when the menu bar icon is hidden (PRD §6.7). Without Accessibility access it
+    /// opens the welcome window instead, which explains how to grant it.
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+        if let accessibility, !accessibility.isTrusted {
+            accessibility.showOnboarding()
+        } else {
+            showSettings()
+        }
+        return false
+    }
+
+    /// Shows or hides the menu bar icon and starts or stops following drags, from the preferences and
+    /// the Accessibility state. Called at launch, on every trust change and on every preference change.
+    private func applyPreferences() {
+        guard let preferences, let accessibility else { return }
+        let trusted = accessibility.isTrusted
+        menuBar?.setIconVisible(preferences.showsMenuBarIcon(isTrusted: trusted))
+        dragMonitor?.setEnabled(trusted && preferences.watchesDrags)
+    }
+
+    /// Opens the Settings window, creating it the first time.
+    private func showSettings(tab: SettingsTab? = nil) {
+        guard let preferences else { return }
+        let settings = settings ?? SettingsWindowController(model: SettingsModel(
+            preferences: preferences,
+            loginItem: loginItem,
+            tiling: TilingStatus { SystemTilingCheck.live().conflicts() }
+        ))
+        self.settings = settings
+        settings.present(tab: tab)
     }
 
     private static func connect(
@@ -92,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the welcome window.
     private static func makeTilingNotice(preferences: Preferences) -> TilingNoticeCoordinator {
         TilingNoticeCoordinator(
-            conflicts: { SystemTilingCheck.live().conflicts() },
+            conflicts: { preferences.relevantTilingConflicts(SystemTilingCheck.live().conflicts()) },
             isHidden: { preferences.hidesTilingNotice },
             hide: { preferences.hidesTilingNotice = true },
             presenter: TilingNoticeAlert(),
@@ -127,12 +166,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ) -> (DragMonitor, DragSnapController) {
         let snapper = DragSnapController(
             screens: SystemScreens(),
-            preview: OverlayController(),
-            dragSettings: { .defaults },
+            preview: OverlayController(style: { preferences.previewStyle }),
+            dragSettings: { preferences.dragSettings },
             actionSettings: { preferences.actionSettings },
             isIgnored: { pid in
                 NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
                     .map(preferences.ignoredBundleIDs.contains) ?? false
+            },
+            isSnappingEnabled: { preferences.dragToSnapEnabled },
+            enteredArea: {
+                // Does nothing without a Force Touch trackpad.
+                if preferences.hapticFeedback {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+                }
             }
         )
         let tracker = DragTracker(
@@ -154,7 +200,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         tracker.onCancelled = { [weak snapper] _ in snapper?.dragCancelled() }
         let monitor = DragMonitor(tracker: tracker)
-        monitor.onOptionKey = { [weak snapper] held in snapper?.setSnappingDisabled(held) }
+        monitor.snapModifier = { preferences.snapModifier.flags }
+        monitor.onSnapModifier = { [weak snapper] held in snapper?.setSnappingDisabled(held) }
         return (monitor, snapper)
     }
 

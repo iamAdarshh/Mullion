@@ -1,6 +1,6 @@
 # Default keyboard shortcuts
 
-Every shortcut can be remapped in **Settings → Shortcuts**. The defaults use the **⌃⌥** (Control + Option) prefix, which macOS and most apps leave free.
+Every shortcut can be remapped in **Settings → Shortcuts**. A shortcut another Mullion action already uses is refused, and *Restore Defaults…* puts every shortcut back. The defaults use the **⌃⌥** (Control + Option) prefix, which macOS and most apps leave free.
 
 **Without Accessibility access** the shortcuts are released, so other apps receive those keys. They come back within 5 s of access being granted again, or at once when you open the menu (PRD §6.9.3).
 
