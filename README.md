@@ -56,12 +56,16 @@ See [docs/PRD.md](docs/PRD.md) for the full specification and [docs/SHORTCUTS.md
 - The **Accessibility** permission, which is required to move other apps' windows
 
 ## Install
-### Download the beta
+### Download
 1. Download the latest `Mullion-*.dmg` from [Releases](https://github.com/iamAdarshh/Mullion/releases) and drag Mullion to Applications.
-2. Beta builds aren't notarized yet, so macOS blocks the first launch. Open it anyway from *System Settings → Privacy & Security* (scroll to *Security*, click **Open Anyway**), or run `xattr -dr com.apple.quarantine /Applications/Mullion.app`.
-3. Grant the **Accessibility** permission when Mullion asks.
+2. Open Mullion. macOS says it can't check it for malicious software: click **Done** (not *Move to Bin*).
+3. Open *System Settings → Privacy & Security*, scroll to *Security*, and click **Open Anyway** next to the message about Mullion. Confirm with your password or Touch ID. You only do this once per version.
+   - Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/Mullion.app`
+4. Grant the **Accessibility** permission when Mullion asks.
 
-After installing a new beta, you may need to turn Mullion's Accessibility permission off and on again: unsigned builds look like a different app to macOS after every update.
+**Why the warning?** Mullion is free and built by one person without a paid Apple Developer account, so it isn't notarized by Apple. It's [open source](https://github.com/iamAdarshh/Mullion), never goes online, and every release is built by GitHub Actions from the tagged source, with SHA-256 checksums on the release page.
+
+After updating, you may need to turn Mullion's Accessibility permission off and on again: without an Apple signing certificate, macOS treats each new version as a different app.
 
 ### Build from source
 Needs Xcode 26 or later (Swift 6.2). Full instructions are in [docs/SETUP.md](docs/SETUP.md).

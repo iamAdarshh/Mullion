@@ -54,8 +54,8 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [x] App icon and menu bar template icon (original artwork, drawn by `scripts/make-icons.swift`)
 - [ ] German localisation (stretch goal)
 - [ ] README GIF and website/GitHub Pages (optional)
-- [ ] `Makefile` release targets: `archive`, `notarize`, `dmg` (see [RELEASING.md](RELEASING.md))
-- [ ] Decide on signing and notarization ([RELEASING.md](RELEASING.md)), then ship `v1.0.0`
+- [x] `Makefile` release targets: `archive`, `dmg` (no `notarize`: v1 ships without a Developer ID, see [RELEASING.md](RELEASING.md))
+- [ ] Decide on signing and notarization ([RELEASING.md](RELEASING.md)), then ship `v1.0.0`. Decided: no Developer ID, ad-hoc signed, *Open Anyway* documented
 
 **Exit criteria:** the full test matrix passes on macOS 14, 15, and the latest release, and the release checklist is complete.
 
