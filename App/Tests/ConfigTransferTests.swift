@@ -48,10 +48,7 @@ final class ConfigTransferTests {
         let exported = ConfigTransfer.export(preferences: preferences, shortcuts: shortcuts)
         let file = try MullionConfig.decode(exported.encoded())
 
-        preferences.resetAll()
-        for action in WindowAction.allCases {
-            shortcuts.reset(action)
-        }
+        ConfigTransfer.resetAll(preferences: preferences, shortcuts: shortcuts)
         ConfigTransfer.apply(file, to: preferences, shortcuts: shortcuts)
 
         #expect(ConfigTransfer.export(preferences: preferences, shortcuts: shortcuts) == exported)
@@ -100,9 +97,36 @@ final class ConfigTransferTests {
         #expect(shortcuts.shortcut(for: .center) == nil)
     }
 
+    /// A partial file that takes ⌃⌥← for Center: Left Half, left out of the file, loses its default
+    /// ⌃⌥← instead of sharing it.
+    @Test func anImportedShortcutBeatsADefault() throws {
+        let leftHalf = try #require(ConfigTransfer.defaultShortcuts[.leftHalf])
+        ConfigTransfer.apply(
+            MullionConfig(shortcuts: [WindowAction.center.rawValue: leftHalf]),
+            to: preferences,
+            shortcuts: shortcuts
+        )
+        #expect(shortcuts.shortcut(for: .center) == leftHalf)
+        #expect(shortcuts.shortcut(for: .leftHalf) == nil)
+        #expect(shortcuts.shortcut(for: .rightHalf) == ConfigTransfer.defaultShortcuts[.rightHalf])
+    }
+
+    /// A shortcut the recorder would refuse, such as a bare "a", is skipped: the action keeps its
+    /// default instead of swallowing that key in every app.
+    @Test func aRefusedShortcutKeepsTheDefault() {
+        let bareA = MullionConfig.Shortcut(keyCode: 0, modifiers: 0)
+        let resolved = ConfigTransfer.resolveShortcuts(
+            [WindowAction.leftHalf.rawValue: bareA],
+            defaults: ConfigTransfer.defaultShortcuts,
+            isAllowed: { $0 != bareA }
+        )
+        #expect(resolved[.leftHalf] == .some(ConfigTransfer.defaultShortcuts[.leftHalf]))
+    }
+
     @Test func resetAllMatchesAFreshStart() throws {
         try customise()
-        preferences.resetAll()
+        ConfigTransfer.resetAll(preferences: preferences, shortcuts: shortcuts)
+        #expect(shortcuts.shortcut(for: .center) == ConfigTransfer.defaultShortcuts[.center])
         let fresh = try freshPreferences()
         #expect(ConfigTransfer.export(preferences: preferences, shortcuts: shortcuts).general
             == ConfigTransfer.export(preferences: fresh, shortcuts: shortcuts).general)

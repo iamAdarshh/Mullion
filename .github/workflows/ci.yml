@@ -82,4 +82,7 @@ jobs:
       - name: Run app tests
         run: |
           tar -xzf app-tests.tgz
-          xcodebuild test-without-building -xctestrun "$(ls Products/*.xctestrun | head -1)" -destination 'platform=macOS'
+          xcodebuild test-without-building -xctestrun "$(ls Products/*.xctestrun | head -1)" \
+            -destination 'platform=macOS' 2>&1 | tee test.log
+          # An older test runtime that can't find the tests would "pass" with none: require some.
+          grep -E "Test run with [1-9][0-9]* tests? .*passed" test.log

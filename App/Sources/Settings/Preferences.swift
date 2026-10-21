@@ -157,19 +157,27 @@ final class Preferences {
         set { withMutation(keyPath: \.hapticFeedback) { defaults.set(newValue, forKey: Key.hapticFeedback) } }
     }
 
-    /// Puts every preference back to its default (PRD §6.8 Advanced). Through the setters, so
-    /// everything observing them sees the change.
+    /// Puts every preference back to its default (PRD §6.8 Advanced): removes the stored values, so
+    /// the registered defaults apply again, and tells everything observing them.
     func resetAll() {
-        actionSettings = .defaults
-        restoresSizeOnDragAway = true
-        showsMenuBarIcon = true
-        dragToSnapEnabled = true
-        snapModifier = .option
-        dragSettings = .defaults
-        previewStyle = PreviewStyle()
-        hapticFeedback = true
-        hidesTilingNotice = false
-        ignoredBundleIDs = []
+        remove([Key.gap, Key.almostMaximizePercent, Key.resizeStep, Key.repeatBehavior], for: \.actionSettings)
+        remove([Key.restoresSizeOnDragAway], for: \.restoresSizeOnDragAway)
+        remove([Key.showsMenuBarIcon], for: \.showsMenuBarIcon)
+        remove([Key.dragToSnap], for: \.dragToSnapEnabled)
+        remove([Key.snapModifier], for: \.snapModifier)
+        remove([Key.edgeThickness, Key.cornerSize], for: \.dragSettings)
+        remove([Key.previewColor, Key.previewOpacity], for: \.previewStyle)
+        remove([Key.hapticFeedback], for: \.hapticFeedback)
+        remove([Key.hidesTilingNotice], for: \.hidesTilingNotice)
+        remove([Key.ignoredBundleIDs], for: \.ignoredBundleIDs)
+    }
+
+    private func remove(_ keys: [String], for property: KeyPath<Preferences, some Any>) {
+        withMutation(keyPath: property) {
+            for key in keys {
+                defaults.removeObject(forKey: key)
+            }
+        }
     }
 
     /// The macOS tiling settings that clash with these preferences (PRD §6.6).

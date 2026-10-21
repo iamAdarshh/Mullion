@@ -18,7 +18,8 @@ enum ConfigFileActions {
             try config.encoded().write(to: url, options: .atomic)
             Log.settings.info("Exported settings")
         } catch {
-            Log.settings.error("Couldn't export settings: \(error, privacy: .public)")
+            // Private: the error names the file's path, which includes the user's name.
+            Log.settings.error("Couldn't export settings: \(error, privacy: .private)")
             showError(String(
                 localized: "Mullion couldn't save “\(url.lastPathComponent)”.",
                 comment: "Export failed. The name is the file's."
@@ -39,7 +40,7 @@ enum ConfigFileActions {
             showError(message(for: error, name: name), detail: nil)
             return
         } catch {
-            Log.settings.error("Couldn't read the settings file: \(error, privacy: .public)")
+            Log.settings.error("Couldn't read the settings file: \(error, privacy: .private)")
             showError(String(
                 localized: "Mullion couldn't read “\(name)”.",
                 comment: "Import failed: the file couldn't be opened. The name is the file's."

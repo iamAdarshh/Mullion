@@ -58,10 +58,7 @@ struct AdvancedSettingsView: View {
     }
 
     private func resetEverything() {
-        preferences.resetAll()
-        for action in WindowAction.allCases {
-            shortcuts.reset(action)
-        }
+        ConfigTransfer.resetAll(preferences: preferences, shortcuts: shortcuts)
         Log.settings.info("Reset all settings")
     }
 

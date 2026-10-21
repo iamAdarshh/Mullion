@@ -74,7 +74,7 @@ public struct MullionConfig: Equatable, Sendable {
     }
 
     /// A key combination as Carbon codes, the form the hotkey library stores.
-    public struct Shortcut: Codable, Equatable, Sendable {
+    public struct Shortcut: Codable, Hashable, Sendable {
         public var keyCode: Int
         public var modifiers: Int
 

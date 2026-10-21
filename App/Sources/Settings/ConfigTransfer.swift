@@ -97,24 +97,67 @@ enum ConfigTransfer {
         }
     }
 
-    /// Missing actions get their default. A shortcut an earlier action already took is skipped, so
-    /// one key combination never triggers two actions.
     private static func apply(_ config: [String: MullionConfig.Shortcut?], to shortcuts: any ShortcutStoring) {
-        var taken: [MullionConfig.Shortcut] = []
+        let resolved = resolveShortcuts(config, defaults: defaultShortcuts, isAllowed: ShortcutConflicts.isAllowed)
         for action in WindowAction.allCases {
-            guard let entry = config[action.rawValue] else {
-                shortcuts.reset(action)
+            shortcuts.setShortcut(resolved[action] ?? nil, for: action)
+        }
+    }
+
+    /// The default shortcuts (SHORTCUTS.md) in the config's form.
+    static let defaultShortcuts: [WindowAction: MullionConfig.Shortcut] = DefaultShortcuts.shortcuts.mapValues {
+        MullionConfig.Shortcut(keyCode: $0.carbonKeyCode, modifiers: $0.carbonModifiers)
+    }
+
+    /// Every action's shortcut after importing `entries`: the file's own, or the default for an
+    /// action the file leaves out. One key combination never triggers two actions: the file's
+    /// shortcuts win over defaults, and between two of the file's, the first in menu order wins; the
+    /// loser is cleared. A shortcut `isAllowed` refuses is skipped, as if the file left it out.
+    static func resolveShortcuts(
+        _ entries: [String: MullionConfig.Shortcut?],
+        defaults: [WindowAction: MullionConfig.Shortcut],
+        isAllowed: (MullionConfig.Shortcut) -> Bool
+    ) -> [WindowAction: MullionConfig.Shortcut?] {
+        var explicit: [WindowAction: MullionConfig.Shortcut?] = [:]
+        for action in WindowAction.allCases {
+            guard let entry = entries[action.rawValue] else { continue }
+            if let shortcut = entry, !isAllowed(shortcut) {
+                Log.settings.notice("Imported shortcut for \(action.rawValue, privacy: .public) isn't allowed; skipped")
                 continue
             }
-            if let shortcut = entry, taken.contains(shortcut) {
+            explicit[action] = entry
+        }
+
+        var taken = Set<MullionConfig.Shortcut>()
+        var resolved: [WindowAction: MullionConfig.Shortcut?] = [:]
+        for action in WindowAction.allCases {
+            guard let entry = explicit[action] else { continue }
+            if let shortcut = entry, !taken.insert(shortcut).inserted {
                 Log.settings.notice("Imported shortcut for \(action.rawValue, privacy: .public) is taken; cleared")
-                shortcuts.setShortcut(nil, for: action)
-                continue
+                resolved[action] = .some(nil)
+            } else {
+                resolved[action] = entry
             }
-            if let shortcut = entry {
-                taken.append(shortcut)
+        }
+        for action in WindowAction.allCases where explicit[action] == nil {
+            let fallback = defaults[action]
+            if let fallback, taken.contains(fallback) {
+                Log.settings
+                    .notice("Default shortcut for \(action.rawValue, privacy: .public) is imported elsewhere; cleared")
+                resolved[action] = .some(nil)
+            } else {
+                resolved[action] = .some(fallback)
             }
-            shortcuts.setShortcut(entry, for: action)
+        }
+        return resolved
+    }
+
+    /// *Reset Everything…*: every preference, shortcut and ignored app back to its default. Launch at
+    /// login is left alone: macOS owns it.
+    static func resetAll(preferences: Preferences, shortcuts: any ShortcutStoring) {
+        preferences.resetAll()
+        for action in WindowAction.allCases {
+            shortcuts.reset(action)
         }
     }
 }
