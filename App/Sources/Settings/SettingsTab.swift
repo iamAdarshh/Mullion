@@ -4,11 +4,13 @@ import Foundation
 enum SettingsTab: String, CaseIterable {
     case general
     case drag
+    case ignoredApps
 
     var title: String {
         switch self {
         case .general: String(localized: "General", comment: "Settings tab")
         case .drag: String(localized: "Drag", comment: "Settings tab")
+        case .ignoredApps: String(localized: "Ignored Apps", comment: "Settings tab")
         }
     }
 
@@ -17,6 +19,7 @@ enum SettingsTab: String, CaseIterable {
         switch self {
         case .general: "gearshape"
         case .drag: "hand.draw"
+        case .ignoredApps: "nosign"
         }
     }
 }

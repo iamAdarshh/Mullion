@@ -4,6 +4,7 @@
     "%lld pt" : {
       "comment" : "A size in points, for example 8 pt"
     },
+    "Add App" : {},
     "Allow Mullion to arrange your windows" : {},
     "Almost Maximize" : {},
     "Almost Maximize size" : {},
@@ -15,6 +16,7 @@
     "Bottom Right Sixth" : {},
     "Center" : {},
     "Center Third" : {},
+    "Choose from Applications…" : {},
     "Colour" : {},
     "Corner size" : {},
     "Cycle ½, ⅔, ⅓" : {},
@@ -43,8 +45,14 @@
     "Holding ⌥ while dragging tiles the window with macOS instead of moving it without snapping. In Desktop & Dock, turn off “Hold ⌥ key while dragging windows to tile”." : {
       "comment" : "Notice text when macOS ⌥-drag tiling is on. The quoted name is a macOS setting title."
     },
+    "Ignore" : {
+      "comment" : "Open panel button: adds the chosen apps to the ignore list"
+    },
     "Ignore “%@”" : {
       "comment" : "Menu item. Windows of the named app never snap when dragged."
+    },
+    "Ignored Apps" : {
+      "comment" : "Settings tab"
     },
     "Last Third" : {},
     "Last Two-Thirds" : {},
@@ -59,6 +67,7 @@
     "Mullion is turned off in Login Items." : {},
     "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
     "Mullion: Accessibility access needed" : {},
+    "No apps are ignored." : {},
     "Opacity" : {},
     "Open Desktop & Dock Settings" : {
       "comment" : "Button: opens System Settings so the user can turn macOS tiling off."
@@ -78,6 +87,9 @@
     "Shrink" : {},
     "Sixths" : {},
     "Snap windows dragged to a screen edge" : {},
+    "Stop ignoring %@" : {
+      "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
+    },
     "Thirds" : {},
     "To get back to Settings, open Mullion again from the Applications folder." : {},
     "Top Center Sixth" : {},
@@ -90,6 +102,7 @@
     "Use accent colour" : {},
     "Waiting for access…" : {},
     "Welcome to Mullion" : {},
+    "Windows of these apps never snap when dragged. Keyboard shortcuts still work." : {},
     "macOS is also tiling windows" : {
       "comment" : "Title of the notice shown when macOS window tiling is on."
     },
