@@ -4,6 +4,12 @@
     "%lld pt" : {
       "comment" : "A size in points, for example 8 pt"
     },
+    "A free, open-source window manager for macOS." : {},
+    "About" : {
+      "comment" : "Settings tab"
+    },
+    "About Mullion" : {},
+    "Acknowledgements" : {},
     "Add App" : {},
     "Allow Mullion to arrange your windows" : {},
     "Almost Maximize" : {},
@@ -36,6 +42,7 @@
     "General" : {
       "comment" : "Settings tab"
     },
+    "GitHub" : {},
     "Grant Accessibility access…" : {},
     "Grant Access…" : {},
     "Grow" : {},
@@ -59,6 +66,10 @@
     "Last Two-Thirds" : {},
     "Launch at login" : {},
     "Left Half" : {},
+    "Licence" : {},
+    "MIT" : {
+      "comment" : "The MIT licence"
+    },
     "Maximize" : {},
     "Maximize Height" : {},
     "Move to Next Display" : {},
@@ -94,6 +105,7 @@
     "Shrink" : {},
     "Sixths" : {},
     "Snap windows dragged to a screen edge" : {},
+    "Source code" : {},
     "Stop ignoring %@" : {
       "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
     },
@@ -110,6 +122,9 @@
     "Top Right Sixth" : {},
     "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
     "Use accent colour" : {},
+    "Version %@" : {
+      "comment" : "For example: Version 1.0.0 (12)"
+    },
     "Waiting for access…" : {},
     "Welcome to Mullion" : {},
     "Windows of these apps never snap when dragged. Keyboard shortcuts still work." : {},

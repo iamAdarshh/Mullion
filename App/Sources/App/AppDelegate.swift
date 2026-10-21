@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Self.connect(menuBar, accessibility: accessibility, dispatcher: dispatcher, preferences: preferences)
-        menuBar.onOpenSettings = { [weak self] in self?.showSettings() }
+        menuBar.onOpenSettings = { [weak self] tab in self?.showSettings(tab: tab) }
         keepApplying { [weak menuBar] in menuBar?.setIconVisible(preferences.showsMenuBarIcon) }
 
         Log.app.info("Launched, Accessibility trusted: \(accessibility.isTrusted, privacy: .public)")
@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Opens the Settings window, creating it the first time.
-    private func showSettings() {
+    private func showSettings(tab: SettingsTab? = nil) {
         guard let preferences else { return }
         let settings = settings ?? SettingsWindowController(model: SettingsModel(
             preferences: preferences,
@@ -92,7 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             tiling: TilingStatus { SystemTilingCheck.live().conflicts() }
         ))
         self.settings = settings
-        settings.present()
+        settings.present(tab: tab)
     }
 
     private static func connect(

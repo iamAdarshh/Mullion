@@ -57,6 +57,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         case .shortcuts: AnyView(ShortcutsSettingsView())
         case .drag: AnyView(DragSettingsView(preferences: model.preferences, tiling: model.tiling))
         case .ignoredApps: AnyView(IgnoredAppsSettingsView(preferences: model.preferences))
+        case .about: AnyView(AboutSettingsView())
         }
         let hosting = NSHostingController(rootView: view.frame(width: SettingsLayout.width))
         // The tab view controller passes the selected tab's title on to the window.

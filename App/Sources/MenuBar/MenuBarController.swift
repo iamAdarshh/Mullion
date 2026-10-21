@@ -13,8 +13,8 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     var onAction: ((WindowAction) -> Void)?
     /// The app the *Ignore* item is about, asked each time the menu opens. `nil` hides the item.
     var ignorableApp: (() -> IgnorableApp?)?
-    /// Called when the user chooses *Settings…*.
-    var onOpenSettings: (() -> Void)?
+    /// Called when the user chooses *Settings…* (`nil`) or *About Mullion* (`.about`).
+    var onOpenSettings: ((SettingsTab?) -> Void)?
     /// Called when the user puts an app on the ignore list (`true`) or takes it off, with its bundle ID.
     var onSetIgnored: ((Bool, String) -> Void)?
 
@@ -105,6 +105,13 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
         )
         settings.target = self
         menu.addItem(settings)
+        let about = NSMenuItem(
+            title: String(localized: "About Mullion"),
+            action: #selector(openAbout),
+            keyEquivalent: ""
+        )
+        about.target = self
+        menu.addItem(about)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(
@@ -151,7 +158,11 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     }
 
     @objc private func openSettings() {
-        onOpenSettings?()
+        onOpenSettings?(nil)
+    }
+
+    @objc private func openAbout() {
+        onOpenSettings?(.about)
     }
 
     @objc private func grantAccess() {
