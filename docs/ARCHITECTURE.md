@@ -70,7 +70,7 @@ mullion/
 | Login item | `SMAppService.mainApp` (built in) | |
 | Persistence | `UserDefaults` for preferences; JSON files in Application Support for layouts, workspaces and app memory | |
 | Logging | `os.Logger`, subsystem = bundle ID | |
-| Distribution | Outside the App Store; notarized DMG and a Homebrew cask | [0002](adr/0002-distribution-outside-app-store.md) |
+| Distribution | Outside the App Store; an ad-hoc signed DMG (not notarized, see [RELEASING.md](RELEASING.md)) and a Homebrew cask in our own tap | [0002](adr/0002-distribution-outside-app-store.md) |
 
 ## 4. Coordinate systems (read this before touching geometry)
 macOS uses two global coordinate spaces, and mixing them up is the most common source of bugs in window managers.

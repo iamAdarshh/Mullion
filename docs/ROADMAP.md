@@ -51,13 +51,14 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [x] SwiftUI Settings with every tab in PRD §6.8
 - [x] Launch at login via `SMAppService.mainApp`
 - [x] Config export/import (versioned JSON)
-- [ ] App icon and menu bar template icon (original artwork)
+- [x] App icon and menu bar template icon (original artwork, drawn by `scripts/make-icons.swift`)
 - [ ] German localisation (stretch goal)
 - [ ] README GIF and website/GitHub Pages (optional)
-- [ ] `Makefile` release targets: `archive`, `notarize`, `dmg` (see [RELEASING.md](RELEASING.md))
-- [ ] Decide on signing and notarization ([RELEASING.md](RELEASING.md)), then ship `v1.0.0`
+- [x] `Makefile` release targets: `archive`, `dmg` (no `notarize`: v1 ships without a Developer ID, see [RELEASING.md](RELEASING.md))
+- [ ] Decide on signing and notarization ([RELEASING.md](RELEASING.md)), then ship `v1.0.0`. Decided: no Developer ID, ad-hoc signed, *Open Anyway* documented
 
 **Exit criteria:** the full test matrix passes on macOS 14, 15, and the latest release, and the release checklist is complete.
+Accepted for v1.0 ([test run](test-runs/M3-2026-10-21.md)): the full matrix on the latest release; on macOS 14 and 15 (virtual machines) the release DMG's install, Gatekeeper, onboarding, tiling notice, smoke test, launch at login and memory. The rows left out there cover display and drag behaviour that doesn't vary by macOS version, and the app tests also run on macOS 15 in CI.
 
 ---
 

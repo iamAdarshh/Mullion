@@ -9,12 +9,12 @@ Versioning follows [SemVer](https://semver.org). The tag format is `vMAJOR.MINOR
 4. [ ] Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Base.xcconfig`. `MARKETING_VERSION` is always plain `X.Y.Z` (macOS rejects a `-beta.N` suffix in `CFBundleShortVersionString`). A beta keeps the `X.Y.Z` it leads up to and only bumps the build number.
 5. [ ] Release build: `make archive`, which produces `build/Mullion.app` (Release, universal arm64 + x86_64, Hardened Runtime, ad-hoc signed) and verifies its signature
 6. [ ] **Signing**
-   - *With Developer ID:* `make notarize` (uses `xcrun notarytool submit --wait` with a keychain profile, then `xcrun stapler staple`). Not written yet: it comes with the M3 signing decision.
-   - *Without:* nothing to do, because `make archive` already ad-hoc signs. Add the Gatekeeper note to the release notes.
+   - **Decision (M3, 2026-10-21): v1.x ships without a Developer ID.** The project has no paid Apple Developer account. `make archive` ad-hoc signs, and the release notes and README explain *Open Anyway*. There is no `make notarize` target.
+   - If a Developer ID is ever added: write `make notarize` (`xcrun notarytool submit --wait` with a keychain profile, then `xcrun stapler staple`), put the secrets in the `release` environment, and drop the Gatekeeper note.
 7. [ ] `make dmg`, which produces `build/Mullion-X.Y.Z.dmg` and prints its SHA-256. Record it. For a beta: `make dmg RELEASE_VERSION=X.Y.Z-beta.N`.
 8. [ ] Smoke test the DMG on a clean user account: install, grant Accessibility, try 3 shortcuts and 1 drag
 9. [ ] Tag and publish, preferably through CI (see below): `git tag vX.Y.Z && git push origin vX.Y.Z`
-10. [ ] Update the Homebrew cask (own tap `iamAdarshh/homebrew-tap` first; submit to `homebrew/cask` once the project meets its notability requirements)
+10. [ ] Update the Homebrew cask in the own tap `iamAdarshh/homebrew-tap`. Not `homebrew/cask`: its casks have to pass Gatekeeper, which an un-notarized build doesn't.
 
 ## Releasing through CI (preferred)
 Pushing a `v*` tag runs `.github/workflows/release.yml`, so the published files are built from exactly the tagged commit on a clean runner, not on your Mac.

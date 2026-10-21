@@ -48,13 +48,18 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
         grantItem.isHidden = trusted
         grantSeparator.isHidden = trusted
 
-        // Placeholder symbols until the original artwork lands in M3.
-        let symbol = trusted ? "rectangle.split.2x1" : "exclamationmark.triangle"
         let description = trusted
             ? String(localized: "Mullion")
             : String(localized: "Mullion: Accessibility access needed")
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: description)
+        // Mullion's own icon (a template image from the asset catalog), or a warning while untrusted.
+        // A copy, because `NSImage(named:)` returns a shared instance; a symbol if the asset is missing,
+        // so the item is never an empty square.
+        let image = trusted
+            ? (NSImage(named: "MenuBarIcon")?.copy() as? NSImage)
+            ?? NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: description)
+            : NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: description)
         image?.isTemplate = true
+        image?.accessibilityDescription = description
         statusItem.button?.image = image
         statusItem.button?.toolTip = description
     }
