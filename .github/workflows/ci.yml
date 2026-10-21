@@ -43,3 +43,57 @@ jobs:
 
       - name: Build and test app
         run: make test-app
+
+      # For the older-macos job. The tests need this Xcode's Swift Testing: the older runners' Xcode
+      # ships an older one that lacks symbols they use. The test bundle's folder comes first on the
+      # framework and library search paths, so copies there win. Tarred: artifact uploads drop the
+      # symlinks inside framework bundles.
+      - name: Build app tests for older macOS
+        run: |
+          make build-for-testing
+          platform="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
+          products=build/DerivedData/Build/Products
+          for framework in "$platform"/Library/Frameworks/Testing.framework "$platform"/Library/Frameworks/_Testing_*.framework; do
+            ditto "$framework" "$products/Debug/$(basename "$framework")"
+          done
+          cp "$platform/usr/lib/lib_TestingInterop.dylib" "$products/Debug/"
+          tar -czf app-tests.tgz -C build/DerivedData/Build Products
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app-tests
+          path: app-tests.tgz
+          retention-days: 1
+
+  # Runs the app tests built above on an older macOS (M3 exit criteria). Only the tests run there;
+  # they're compiled once, by the macos-26 job's Xcode.
+  # Not macos-14: this Xcode's Swift Testing hides symbols the tests use when loaded on macOS 14
+  # ("Symbol not found: Testing.Test.Case.arguments"). macOS 14 is covered by the manual test matrix.
+  older-macos:
+    needs: build-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: app-tests
+
+      # The newest Xcode on the image, whose xcodebuild can read the test run file.
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+          sw_vers
+
+      - name: Run app tests
+        run: |
+          tar -xzf app-tests.tgz
+          xcodebuild test-without-building -xctestrun "$(ls Products/*.xctestrun | head -1)" \
+            -destination 'platform=macOS' 2>&1 | tee test.log
+          # An older test runtime that can't find the tests would "pass" with none: require some.
+          grep -E "Test run with [1-9][0-9]* tests? .*passed" test.log

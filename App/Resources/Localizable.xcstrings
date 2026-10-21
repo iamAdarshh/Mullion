@@ -11,6 +11,12 @@
     "About Mullion" : {},
     "Acknowledgements" : {},
     "Add App" : {},
+    "Advanced" : {
+      "comment" : "Settings tab"
+    },
+    "All settings, shortcuts and ignored apps are replaced. Anything the file leaves out goes back to its default." : {
+      "comment" : "Import confirmation details."
+    },
     "Allow Mullion to arrange your windows" : {},
     "Almost Maximize" : {},
     "Almost Maximize size" : {},
@@ -20,12 +26,16 @@
     "Bottom Left Sixth" : {},
     "Bottom Right" : {},
     "Bottom Right Sixth" : {},
+    "Cancel" : {},
     "Center" : {},
     "Center Third" : {},
     "Choose from Applications…" : {},
     "Colour" : {},
+    "Copied" : {},
+    "Copy Diagnostics" : {},
     "Corner size" : {},
     "Cycle ½, ⅔, ⅓" : {},
+    "Diagnostics describe your Mac, displays and settings for a bug report, without the names of your ignored apps. In Console, search for “mullion” and choose Action → Include Debug Messages." : {},
     "Displays" : {},
     "Do nothing" : {},
     "Don't Show Again" : {
@@ -35,7 +45,9 @@
       "comment" : "Settings tab"
     },
     "Edge size" : {},
+    "Every setting, shortcut and ignored app goes back to its default. Launch at login is left as it is." : {},
     "Every shortcut you changed goes back to its default." : {},
+    "Export Settings…" : {},
     "First Third" : {},
     "First Two-Thirds" : {},
     "Gap between windows" : {},
@@ -62,6 +74,7 @@
     "Ignored Apps" : {
       "comment" : "Settings tab"
     },
+    "Import Settings…" : {},
     "Last Third" : {},
     "Last Two-Thirds" : {},
     "Launch at login" : {},
@@ -76,11 +89,18 @@
     "Move to Previous Display" : {},
     "Move to next display" : {},
     "Mullion" : {},
+    "Mullion couldn't read “%@”." : {
+      "comment" : "Import failed: the file couldn't be opened. The name is the file's."
+    },
+    "Mullion couldn't save “%@”." : {
+      "comment" : "Export failed. The name is the file's."
+    },
     "Mullion is turned off in Login Items." : {},
     "Mullion uses the macOS Accessibility permission to read and change the position and size of other apps' windows. It doesn't read what's inside your windows and never sends anything over the network." : {},
     "Mullion: Accessibility access needed" : {},
     "No apps are ignored." : {},
     "Opacity" : {},
+    "Open Console" : {},
     "Open Desktop & Dock Settings" : {
       "comment" : "Button: opens System Settings so the user can turn macOS tiling off."
     },
@@ -91,12 +111,23 @@
     "Quarters" : {},
     "Quit Mullion" : {},
     "Repeating a half shortcut" : {},
+    "Replace" : {
+      "comment" : "Import confirmation button"
+    },
+    "Replace your settings with the ones in “%@”?" : {
+      "comment" : "Import confirmation. The name is the file's."
+    },
+    "Reset Everything" : {},
+    "Reset Everything…" : {},
+    "Reset all of Mullion's settings?" : {},
     "Restore" : {},
     "Restore Defaults" : {},
     "Restore Defaults…" : {},
     "Restore a snapped window's size when it's dragged away" : {},
     "Restore the default shortcuts?" : {},
     "Right Half" : {},
+    "Settings file" : {},
+    "Settings, shortcuts and ignored apps, as JSON. Launch at login isn't included." : {},
     "Settings…" : {},
     "Shortcuts" : {
       "comment" : "Settings tab"
@@ -106,6 +137,7 @@
     "Sixths" : {},
     "Snap windows dragged to a screen edge" : {},
     "Source code" : {},
+    "Start over" : {},
     "Stop ignoring %@" : {
       "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
     },
@@ -120,6 +152,7 @@
     "Top Left Sixth" : {},
     "Top Right" : {},
     "Top Right Sixth" : {},
+    "Troubleshooting" : {},
     "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
     "Use accent colour" : {},
     "Version %@" : {
@@ -133,6 +166,15 @@
     },
     "macOS tiles windows you drag to the screen edges or the menu bar, so macOS and Mullion both act on the same drag. In Desktop & Dock, turn off “Drag windows to screen edges to tile” and “Drag windows to menu bar to fill screen”." : {
       "comment" : "Notice text when macOS edge tiling is on. The quoted names are macOS setting titles."
+    },
+    "“%@” has a value Mullion can't read." : {
+      "comment" : "Import failed: a value has the wrong type. The name is the file's."
+    },
+    "“%@” isn't a Mullion settings file." : {
+      "comment" : "Import failed. The name is the file's."
+    },
+    "“%@” was exported by a newer version of Mullion. Update Mullion to import it." : {
+      "comment" : "Import failed. The name is the file's."
     },
     "⌃ Control" : {
       "comment" : "The Control key"

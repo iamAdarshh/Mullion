@@ -25,4 +25,20 @@ enum ShortcutConflicts {
             comment: "Recording a shortcut another Mullion action has. The name is an action, such as Left Half."
         ))
     }
+
+    private static let functionKeys: Set<KeyboardShortcuts.Key> = [
+        .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10,
+        .f11, .f12, .f13, .f14, .f15, .f16, .f17, .f18, .f19, .f20,
+    ]
+
+    /// Whether the recorder would accept `shortcut`, for shortcuts that come from elsewhere (an
+    /// imported file): a valid key with ⌘, ⌥ or ⌃, or a function key, and not one macOS uses. A
+    /// global hotkey on a bare key would swallow that key in every app.
+    static func isAllowed(_ shortcut: MullionConfig.Shortcut) -> Bool {
+        guard (0 ... 0x7F).contains(shortcut.keyCode) else { return false }
+        let candidate = KeyboardShortcuts.Shortcut(carbonKeyCode: shortcut.keyCode, carbonModifiers: shortcut.modifiers)
+        let hasModifier = !candidate.modifiers.isDisjoint(with: [.command, .option, .control])
+        let isFunctionKey = candidate.key.map(functionKeys.contains) ?? false
+        return (hasModifier || isFunctionKey) && !candidate.isTakenBySystem
+    }
 }

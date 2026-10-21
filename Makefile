@@ -1,6 +1,6 @@
 # Mullion developer commands. See docs/SETUP.md.
 .DEFAULT_GOAL := build
-.PHONY: bootstrap build test test-core test-app run lint format clean archive dmg
+.PHONY: bootstrap build test test-core test-app build-for-testing test-without-building run lint format clean archive dmg
 
 PROJECT      := Mullion.xcodeproj
 SCHEME       := Mullion
@@ -46,6 +46,12 @@ test-core: ## Fast: swift test on MullionCore
 
 test-app: bootstrap ## App tests (Swift Testing, hosted in the app)
 	$(XCODEBUILD) -configuration Debug test
+
+build-for-testing: bootstrap ## Build the app tests to run on another Mac (CI: older macOS)
+	$(XCODEBUILD) -configuration Debug build-for-testing
+
+test-without-building: ## Run tests from build-for-testing: make test-without-building XCTESTRUN=path
+	xcodebuild test-without-building -xctestrun '$(XCTESTRUN)' -destination '$(DESTINATION)'
 
 run: build ## Build and launch Mullion-Debug.app
 	open "$(DEBUG_APP)"
