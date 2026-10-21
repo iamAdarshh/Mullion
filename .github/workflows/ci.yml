@@ -44,10 +44,19 @@ jobs:
       - name: Build and test app
         run: make test-app
 
-      # For the older-macos job. Tarred: artifact uploads drop the symlinks inside framework bundles.
+      # For the older-macos job. The tests need this Xcode's Swift Testing: the older runners' Xcode
+      # ships an older one that lacks symbols they use. The test bundle's folder comes first on the
+      # framework and library search paths, so copies there win. Tarred: artifact uploads drop the
+      # symlinks inside framework bundles.
       - name: Build app tests for older macOS
         run: |
           make build-for-testing
+          platform="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
+          products=build/DerivedData/Build/Products
+          for framework in "$platform"/Library/Frameworks/Testing.framework "$platform"/Library/Frameworks/_Testing_*.framework; do
+            ditto "$framework" "$products/Debug/$(basename "$framework")"
+          done
+          cp "$platform/usr/lib/lib_TestingInterop.dylib" "$products/Debug/"
           tar -czf app-tests.tgz -C build/DerivedData/Build Products
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
