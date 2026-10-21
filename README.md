@@ -58,7 +58,7 @@ See [docs/PRD.md](docs/PRD.md) for the full specification and [docs/SHORTCUTS.md
 ## Install
 ### Download
 1. Download the latest `Mullion-*.dmg` from [Releases](https://github.com/iamAdarshh/Mullion/releases) and drag Mullion to Applications.
-2. Open Mullion. macOS says it can't check it for malicious software: click **Done** (not *Move to Bin*).
+2. Open Mullion. macOS warns that it can't verify the app is free of malware: click **Done**. Don't move it to the Trash.
 3. Open *System Settings → Privacy & Security*, scroll to *Security*, and click **Open Anyway** next to the message about Mullion. Confirm with your password or Touch ID. You only do this once per version.
    - Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/Mullion.app`
 4. Grant the **Accessibility** permission when Mullion asks.

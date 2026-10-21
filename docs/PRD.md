@@ -164,5 +164,5 @@ Each v2 feature gets its own spec in [docs/features/](features/) before implemen
 
 ## 9. Open questions
 1. Should almost-maximize and gaps apply to drag snapping as well as shortcuts? (Proposed: yes, one geometry engine for everything.)
-2. Distribution: notarized DMG (needs the paid Apple Developer Program) or unsigned plus a Homebrew cask? Decide before M3.
+2. ~~Distribution: notarized DMG (needs the paid Apple Developer Program) or unsigned plus a Homebrew cask?~~ **Resolved in M3:** v1.x ships an ad-hoc signed DMG with documented *Open Anyway* steps, and a cask in our own tap. See [RELEASING.md](RELEASING.md) step 6 and [ADR-0002](adr/0002-distribution-outside-app-store.md).
 3. Should Zones replace the v1 snap areas when enabled, or sit alongside them (⇧ for zones, plain drag for snap areas)? Proposed: alongside. See zones.md.

@@ -58,6 +58,7 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 - [ ] Decide on signing and notarization ([RELEASING.md](RELEASING.md)), then ship `v1.0.0`. Decided: no Developer ID, ad-hoc signed, *Open Anyway* documented
 
 **Exit criteria:** the full test matrix passes on macOS 14, 15, and the latest release, and the release checklist is complete.
+Accepted for v1.0 ([test run](test-runs/M3-2026-10-21.md)): the full matrix on the latest release; on macOS 14 and 15 (virtual machines) the release DMG's install, Gatekeeper, onboarding, tiling notice, smoke test, launch at login and memory. The rows left out there cover display and drag behaviour that doesn't vary by macOS version, and the app tests also run on macOS 15 in CI.
 
 ---
 
