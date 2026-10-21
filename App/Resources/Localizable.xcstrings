@@ -31,8 +31,11 @@
     "Center Third" : {},
     "Choose from Applications…" : {},
     "Colour" : {},
+    "Copied" : {},
+    "Copy Diagnostics" : {},
     "Corner size" : {},
     "Cycle ½, ⅔, ⅓" : {},
+    "Diagnostics describe your Mac, displays and settings for a bug report, without the names of your ignored apps. In Console, search for “mullion” and choose Action → Include Debug Messages." : {},
     "Displays" : {},
     "Do nothing" : {},
     "Don't Show Again" : {
@@ -42,6 +45,7 @@
       "comment" : "Settings tab"
     },
     "Edge size" : {},
+    "Every setting, shortcut and ignored app goes back to its default. Launch at login is left as it is." : {},
     "Every shortcut you changed goes back to its default." : {},
     "Export Settings…" : {},
     "First Third" : {},
@@ -96,6 +100,7 @@
     "Mullion: Accessibility access needed" : {},
     "No apps are ignored." : {},
     "Opacity" : {},
+    "Open Console" : {},
     "Open Desktop & Dock Settings" : {
       "comment" : "Button: opens System Settings so the user can turn macOS tiling off."
     },
@@ -112,6 +117,9 @@
     "Replace your settings with the ones in “%@”?" : {
       "comment" : "Import confirmation. The name is the file's."
     },
+    "Reset Everything" : {},
+    "Reset Everything…" : {},
+    "Reset all of Mullion's settings?" : {},
     "Restore" : {},
     "Restore Defaults" : {},
     "Restore Defaults…" : {},
@@ -129,6 +137,7 @@
     "Sixths" : {},
     "Snap windows dragged to a screen edge" : {},
     "Source code" : {},
+    "Start over" : {},
     "Stop ignoring %@" : {
       "comment" : "Button help and VoiceOver label: takes the named app off the ignore list"
     },
@@ -143,6 +152,7 @@
     "Top Left Sixth" : {},
     "Top Right" : {},
     "Top Right Sixth" : {},
+    "Troubleshooting" : {},
     "Turn on Mullion in System Settings → Privacy & Security → Accessibility. Mullion continues automatically as soon as access is granted." : {},
     "Use accent colour" : {},
     "Version %@" : {

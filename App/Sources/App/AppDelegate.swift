@@ -100,7 +100,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = settings ?? SettingsWindowController(model: SettingsModel(
             preferences: preferences,
             loginItem: loginItem,
-            tiling: TilingStatus { SystemTilingCheck.live().conflicts() }
+            tiling: TilingStatus { SystemTilingCheck.live().conflicts() },
+            isTrusted: { [weak self] in self?.accessibility?.isTrusted ?? false }
         ))
         self.settings = settings
         settings.present(tab: tab)

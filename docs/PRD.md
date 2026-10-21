@@ -125,7 +125,7 @@ If the user triggers the same half action twice in a row on the same window, and
 | Shortcuts | A recorder for every action, *Restore defaults*, conflict warnings |
 | Drag | Drag-to-snap on/off, the modifier to disable snapping (⌥ or ⌃), edge and corner size, preview colour and opacity, haptic feedback (Force Touch trackpads) |
 | Ignored Apps | Add or remove apps by bundle ID, with a picker for running apps |
-| Advanced | Export and import the config as JSON, reset everything, verbose logging, open the logs folder |
+| Advanced | Export and import the config as JSON (`mullion-config.json`, versioned; import replaces everything, and what the file leaves out gets its default), reset everything (launch at login is left alone, since macOS owns it), *Copy Diagnostics* (version, macOS, Accessibility, displays, tiling and settings for a bug report, with ignored apps only counted), *Open Console*. Mullion logs only to the unified system log (`os.Logger`), so there is no log folder or verbose switch |
 | About | Version, licence, GitHub link, acknowledgements |
 
 ### 6.9 Onboarding and permissions

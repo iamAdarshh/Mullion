@@ -19,6 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Settings → Shortcuts**: change the shortcut for any action, including the sixths, which have none by default. A shortcut another action already uses is refused, and *Restore Defaults…* puts them all back.
 - **Settings → Ignored Apps**: see and edit the apps whose windows never snap when dragged, adding running apps or any app from the Applications folder.
 - **Settings → Advanced**: export your settings, shortcuts and ignored apps to `mullion-config.json`, and import them on another Mac. Import replaces everything; files from a newer Mullion are refused.
+- **Settings → Advanced** also has *Reset Everything…*, *Copy Diagnostics* (a summary for bug reports that doesn't name your ignored apps) and *Open Console*.
 - **Settings → About** shows the version, licence and acknowledgements, and links to the source code. *About Mullion* in the menu opens it.
 
 ## [0.1.0-beta.1] - 2026-10-19
