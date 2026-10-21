@@ -52,8 +52,11 @@ final class MenuBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
             ? String(localized: "Mullion")
             : String(localized: "Mullion: Accessibility access needed")
         // Mullion's own icon (a template image from the asset catalog), or a warning while untrusted.
+        // A copy, because `NSImage(named:)` returns a shared instance; a symbol if the asset is missing,
+        // so the item is never an empty square.
         let image = trusted
-            ? NSImage(named: "MenuBarIcon")
+            ? (NSImage(named: "MenuBarIcon")?.copy() as? NSImage)
+            ?? NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: description)
             : NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: description)
         image?.isTemplate = true
         image?.accessibilityDescription = description
