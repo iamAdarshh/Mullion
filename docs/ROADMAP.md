@@ -64,10 +64,14 @@ Accepted for v1.0 ([test run](test-runs/M3-2026-10-21.md)): the full matrix on t
 
 ## M4: Zones core (v2.0)
 Spec: [features/zones.md](features/zones.md)
-- [ ] Layout model and templates (columns, rows, grid, priority grid), persisted as JSON
-- [ ] A layout assigned per display (keyed by display UUID)
+- [ ] Layout model and templates (columns, rows, grid, priority grid), persisted as JSON with corrupt-file backup
+- [ ] A layout assigned per display (keyed by display UUID), with a default by display shape
 - [ ] ⇧-drag shows zones; dropping applies the zone; ⇧⌘ spans zones
 - [ ] Hotkeys: switch layout 1–9, move window to next/previous zone
+- [ ] Windows stay in their zones when displays change
+- [ ] Settings → Zones tab (templates with percentages, spacing, quick-switch slots); zones in config export/import
+
+**Exit criteria:** Z-1 to Z-12 in the spec pass, including the `M4` test-matrix rows.
 
 ## M5: Zone editor (v2.1)
 - [ ] A full-screen editor overlay: split a zone by clicking it (⌥-click for a vertical split), drag dividers, merge zones, set the gap
