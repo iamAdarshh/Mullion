@@ -5,7 +5,9 @@
 PROJECT      := Mullion.xcodeproj
 SCHEME       := Mullion
 CORE_PKG     := Packages/MullionCore
-DERIVED_DATA := build/DerivedData
+# Outside the repo, so Spotlight and Launchpad don't list Mullion-Debug.app as an installed app
+# (.noindex keeps Spotlight out). CI overrides it with build/DerivedData.
+DERIVED_DATA ?= $(HOME)/Library/Developer/Xcode/DerivedData/Mullion.noindex
 DESTINATION  := platform=macOS
 DEBUG_APP    := $(DERIVED_DATA)/Build/Products/Debug/Mullion-Debug.app
 
