@@ -20,6 +20,9 @@ jobs:
     # macos-26 ships Xcode 26 (Swift 6.2), which KeyboardShortcuts 3.x needs (ADR-0005).
     runs-on: macos-26
     timeout-minutes: 30
+    env:
+      # Inside the workspace (the Makefile's default is in ~/Library); the steps below read it.
+      DERIVED_DATA: build/DerivedData
     steps:
       # Pinned to a commit SHA; Dependabot keeps it current.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
