@@ -10,6 +10,7 @@ Versioning follows [SemVer](https://semver.org). The tag format is `vMAJOR.MINOR
 5. [ ] Release build: `make archive`, which produces `build/Mullion.app` (Release, universal arm64 + x86_64, Hardened Runtime, ad-hoc signed) and verifies its signature
 6. [ ] **Signing**
    - **Decision (M3, 2026-10-21): v1.x ships without a Developer ID.** The project has no paid Apple Developer account. `make archive` ad-hoc signs, and the release notes and README explain *Open Anyway*. There is no `make notarize` target.
+   - **Decision (2026-10-25): from v1.1.0, releases are signed with a stable self-signed certificate** ([ADR-0007](adr/0007-self-signed-release-certificate.md)), so the Accessibility permission survives updates. Creating, backing up and installing the certificate is documented here when the signing change lands.
    - If a Developer ID is ever added: write `make notarize` (`xcrun notarytool submit --wait` with a keychain profile, then `xcrun stapler staple`), put the secrets in the `release` environment, and drop the Gatekeeper note.
 7. [ ] `make dmg`, which produces `build/Mullion-X.Y.Z.dmg` and prints its SHA-256. Record it. For a beta: `make dmg RELEASE_VERSION=X.Y.Z-beta.N`.
 8. [ ] Smoke test the DMG on a clean user account: install, grant Accessibility, try 3 shortcuts and 1 drag
