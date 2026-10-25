@@ -11,9 +11,9 @@ protocol WindowControlling: Sendable {
     /// `nil` when none matches. Finds the window a drag just dropped.
     func window(pid: pid_t, matching frame: CGRect, tolerance: CGFloat) async throws -> WindowRef?
     func frame(of window: WindowRef) async throws -> CGRect
-    /// Moves and resizes the window, writing size and position in `order`. The app may refuse part of
-    /// it; read the frame back to see.
-    func setFrame(_ frame: CGRect, of window: WindowRef, order: FrameWrite.Order) async throws
+    /// Moves and resizes the window, first giving it `sizeBeforeMove` if there is one
+    /// (`FrameWrite.sizeBeforeMove`). The app may refuse part of it; read the frame back to see.
+    func setFrame(_ frame: CGRect, of window: WindowRef, sizeBeforeMove: CGSize?) async throws
     /// `false` once the window has closed.
     func isAlive(_ window: WindowRef) async -> Bool
 }

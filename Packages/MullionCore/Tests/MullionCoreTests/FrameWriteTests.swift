@@ -3,50 +3,81 @@ import Testing
 @testable import MullionCore
 
 struct FrameWriteTests {
-    private static let visible = Screens.macBookAir13.visibleFrame
-    private static let leftHalf = CGRect(x: 0, y: 37, width: 735, height: 919)
-    private static let rightHalf = CGRect(x: 735, y: 37, width: 735, height: 919)
-    private static let topHalf = CGRect(x: 0, y: 37, width: 1470, height: 460)
-    private static let maximized = CGRect(x: 0, y: 37, width: 1470, height: 919)
-
-    // MARK: Order
-
-    /// Regression (#16): resizing first stretched the window past the right edge, an app cut the resize
-    /// short there and then dropped the final one, leaving it half width in the top-left corner.
-    @Test(arguments: [
-        (rightHalf, topHalf),
-        (rightHalf, maximized),
-        (CGRect(x: 100, y: 200, width: 600, height: 300), leftHalf),
-    ])
-    func resizingInPlaceWouldOverflowSoTheWindowMovesFirst(window: CGRect, target: CGRect) {
-        #expect(FrameWrite.order(moving: window, to: target, within: Self.visible) == .positionFirst)
+    /// Halves, quarters and the full visible frame of `screen`: the frames windows move between.
+    private static func tiles(of screen: ScreenGeometry) -> [CGRect] {
+        let visible = screen.visibleFrame
+        let (width, height) = (visible.width / 2, visible.height / 2)
+        let (midX, midY) = (visible.minX + width, visible.minY + height)
+        return [
+            visible,
+            CGRect(x: visible.minX, y: visible.minY, width: width, height: visible.height),
+            CGRect(x: midX, y: visible.minY, width: width, height: visible.height),
+            CGRect(x: visible.minX, y: visible.minY, width: visible.width, height: height),
+            CGRect(x: visible.minX, y: midY, width: visible.width, height: height),
+            CGRect(x: visible.minX, y: visible.minY, width: width, height: height),
+            CGRect(x: midX, y: visible.minY, width: width, height: height),
+            CGRect(x: visible.minX, y: midY, width: width, height: height),
+            CGRect(x: midX, y: midY, width: width, height: height),
+        ]
     }
 
-    @Test func movingFirstWouldOverflowSoTheWindowIsResizedFirst() {
-        let bottomRight = CGRect(x: 735, y: 497, width: 735, height: 459)
-        #expect(FrameWrite.order(moving: Self.maximized, to: bottomRight, within: Self.visible) == .sizeFirst)
+    // MARK: Size before the move
+
+    /// Regression (#16): resizing first stretched a right-half window past the screen edge, where an
+    /// app cut the resize short, then dropped the final one. No write may leave the visible frame.
+    @Test(arguments: Screens.all)
+    func betweenTilesNoWriteLeavesTheScreen(screen: ScreenGeometry) {
+        let bounds = screen.visibleFrame.insetBy(dx: -0.5, dy: -0.5)
+        for window in Self.tiles(of: screen) {
+            for target in Self.tiles(of: screen) {
+                let first = FrameWrite.sizeBeforeMove(moving: window, to: target, within: screen.visibleFrame)
+                let size = first ?? window.size
+                #expect(bounds.contains(CGRect(origin: window.origin, size: size)), "\(window) → \(target)")
+                #expect(bounds.contains(CGRect(origin: target.origin, size: size)), "\(window) → \(target)")
+            }
+        }
     }
 
-    /// Neither order overflows: keep size → position → size, as before #16.
-    @Test(arguments: [(leftHalf, topHalf), (topHalf, maximized)])
-    func whenNeitherOrderOverflowsTheWindowIsResizedFirst(window: CGRect, target: CGRect) {
-        #expect(FrameWrite.order(moving: window, to: target, within: Self.visible) == .sizeFirst)
+    @Test func rightHalfToTopHalfShrinksToTheTopRightQuarterFirst() {
+        let rightHalf = CGRect(x: 735, y: 37, width: 735, height: 919)
+        let topHalf = CGRect(x: 0, y: 37, width: 1470, height: 460)
+        let first = FrameWrite.sizeBeforeMove(moving: rightHalf, to: topHalf, within: Screens.macBookAir13.visibleFrame)
+        #expect(first == CGSize(width: 735, height: 460))
     }
 
-    /// The size is set first on the old display, so the move isn't refused for a window too big for it.
-    @Test func aWindowFromAnotherDisplayIsResizedFirst() {
-        let onExternal = CGRect(x: 2000, y: 100, width: 1200, height: 800)
-        #expect(FrameWrite.order(moving: onExternal, to: Self.topHalf, within: Self.visible) == .sizeFirst)
+    /// A window already no bigger than the target only needs moving, then resizing.
+    @Test func aSmallerWindowIsMovedFirst() {
+        let floating = CGRect(x: 100, y: 200, width: 600, height: 300)
+        let first = FrameWrite.sizeBeforeMove(
+            moving: floating, to: Screens.macBookAir13.visibleFrame, within: Screens.macBookAir13.visibleFrame
+        )
+        #expect(first == nil)
+    }
+
+    /// macOS keeps a window's size within its current display, so a window from another one gets the
+    /// target size first (size → position → size).
+    @Test(arguments: Screens.arrangements.filter { $0.count > 1 })
+    func aWindowFromAnotherDisplayGetsTheTargetSizeFirst(screens: [ScreenGeometry]) throws {
+        let source = try #require(screens.last)
+        let destination = try #require(screens.first)
+        let window = source.visibleFrame.insetBy(dx: 100, dy: 100)
+        let target = destination.visibleFrame
+
+        let first = FrameWrite.sizeBeforeMove(moving: window, to: target, within: destination.visibleFrame)
+
+        #expect(first == target.size)
     }
 
     // MARK: Cut short
 
-    @Test(arguments: [CGSize(width: 735, height: 460), CGSize(width: 1470, height: 400)])
+    private static let leftHalf = CGRect(x: 0, y: 37, width: 735, height: 919)
+
+    @Test(arguments: [CGSize(width: 367, height: 919), CGSize(width: 735, height: 400)])
     func aSmallerWindowWasCutShort(size: CGSize) {
-        #expect(FrameWrite.wasCutShort(size, target: Self.topHalf.size))
+        #expect(FrameWrite.wasCutShort(size, target: Self.leftHalf.size))
     }
 
-    /// A minimum size makes a window larger, never smaller; apps that round sizes stay within 2 pt.
+    /// A minimum size makes a window larger, never smaller; 2 pt allows for rounding.
     @Test(arguments: [CGSize(width: 800, height: 919), CGSize(width: 734, height: 917), Self.leftHalf.size])
     func aLargerOrRoundedWindowWasNot(size: CGSize) {
         #expect(!FrameWrite.wasCutShort(size, target: Self.leftHalf.size))

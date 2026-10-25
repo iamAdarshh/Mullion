@@ -14,8 +14,8 @@ actor FakeWindowController: WindowControlling {
 
     private(set) var windows: [WindowRef: Window] = [:]
     private(set) var setFrameCalls: [CGRect] = []
-    /// The write order of each `setFrame` call.
-    private(set) var setFrameOrders: [FrameWrite.Order] = []
+    /// The size each `setFrame` call asked for before the move.
+    private(set) var sizesBeforeMove: [CGSize?] = []
     private(set) var focusedWindowCalls = 0
     /// The pid of every window `isAlive` was asked about, in order.
     private(set) var isAliveCalls: [pid_t] = []
@@ -95,13 +95,13 @@ actor FakeWindowController: WindowControlling {
         return fake.frame
     }
 
-    func setFrame(_ frame: CGRect, of window: WindowRef, order: FrameWrite.Order) throws {
+    func setFrame(_ frame: CGRect, of window: WindowRef, sizeBeforeMove: CGSize?) throws {
         if let setFrameError, !resizesBeforeFailing {
             throw setFrameError
         }
         guard var fake = windows[window], fake.isAlive else { throw AXWindowError.elementGone }
         setFrameCalls.append(frame)
-        setFrameOrders.append(order)
+        sizesBeforeMove.append(sizeBeforeMove)
         let size = fake.isResizable
             ? CGSize(
                 width: max(frame.width, fake.minimumSize.width),

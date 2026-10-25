@@ -26,8 +26,8 @@ actor AXQueue: WindowControlling {
         try AXWindow.frame(of: window.element)
     }
 
-    func setFrame(_ frame: CGRect, of window: WindowRef, order: FrameWrite.Order) throws {
-        try AXWindow.setFrame(frame, of: window.element, pid: window.pid, order: order)
+    func setFrame(_ frame: CGRect, of window: WindowRef, sizeBeforeMove: CGSize?) throws {
+        try AXWindow.setFrame(frame, of: window.element, pid: window.pid, sizeBeforeMove: sizeBeforeMove)
     }
 
     func isAlive(_ window: WindowRef) -> Bool {

@@ -275,13 +275,13 @@ struct ActionDispatcherTests {
 
     /// Regression (#16): resizing a right-half window to the full width in place stretched it past the
     /// screen edge, where an app cut the resize short, then dropped the final one.
-    @Test func topHalfAfterRightHalfMovesTheWindowBeforeResizingIt() async {
+    @Test func topHalfAfterRightHalfShrinksTheWindowBeforeMovingIt() async {
         let harness = Harness()
         await harness.addFocusedWindow()
 
         await harness.perform(.rightHalf, .topHalf)
 
-        #expect(await harness.windows.setFrameOrders.last == .positionFirst)
+        #expect(await harness.windows.sizesBeforeMove.last == CGSize(width: 735, height: 460))
         #expect(await harness.frame == CGRect(x: 0, y: 37, width: 1470, height: 460))
     }
 

@@ -73,12 +73,12 @@ enum AXWindow {
 
     // MARK: Writing
 
-    /// Moves and resizes a window in `order` (ARCHITECTURE §5.2). Apps with `AXEnhancedUserInterface`
+    /// Moves and resizes a window (ARCHITECTURE §5.2). Apps with `AXEnhancedUserInterface`
     /// on (VoiceOver, some Electron and Chromium apps) animate or ignore resizes, so it is turned off
     /// for the move.
     ///
     /// - Throws: `AXWindowError.incompleteMove` when the window had already changed before the error.
-    static func setFrame(_ frame: CGRect, of window: AXUIElement, pid: pid_t, order: FrameWrite.Order) throws {
+    static func setFrame(_ frame: CGRect, of window: AXUIElement, pid: pid_t, sizeBeforeMove: CGSize?) throws {
         // Fixed-size windows (Calculator) can only be moved. Asked before anything is written, so an
         // app that has stopped answering costs one timeout and the window is left untouched.
         var settable = DarwinBoolean(false)
@@ -98,15 +98,20 @@ enum AXWindow {
             }
         }
 
-        try write(frame, order: order, resizable: resizable, to: ElementWriter(window: window))
+        try write(frame, sizeBeforeMove: sizeBeforeMove, resizable: resizable, to: ElementWriter(window: window))
     }
 
-    /// The writes of `setFrame`. With `.sizeFirst`, the first resize may be refused while the window
-    /// would overflow its current screen; the final one is needed after crossing displays.
-    static func write(_ frame: CGRect, order: FrameWrite.Order, resizable: Bool, to window: some FrameWriting) throws {
+    /// The writes of `setFrame`: `sizeBeforeMove`, the position, then the size. The first resize may be
+    /// refused (a window too big for its current display); the last one is needed after crossing displays.
+    static func write(
+        _ frame: CGRect,
+        sizeBeforeMove: CGSize?,
+        resizable: Bool,
+        to window: some FrameWriting
+    ) throws {
         var changed = false
-        if resizable, order == .sizeFirst {
-            changed = logFailure("first resize") { try window.setSize(frame.size) }
+        if resizable, let sizeBeforeMove {
+            changed = logFailure("first resize") { try window.setSize(sizeBeforeMove) }
         }
         do {
             try window.setPosition(frame.origin)
@@ -153,23 +158,20 @@ enum AXWindow {
             try AXWindow.setPosition(window, origin)
         }
 
-        func frame() throws -> CGRect {
-            try AXWindow.frame(of: window)
+        func size() throws -> CGSize {
+            try AXWindow.value(copyAttribute(window, kAXSizeAttribute), type: .cgSize, initial: CGSize.zero)
         }
     }
 
-    /// Some apps cut a resize short or drop it (#16). A window smaller than `frame` fits at its origin,
-    /// so position then size can't overflow, and is asked for once more. Best effort: the caller reads
-    /// the frame back anyway, and treats a size the app still keeps like a minimum size.
+    /// Some apps cut a resize short or drop it (#16): a window that came out smaller is asked for its
+    /// size once more. Only the size is read and written; the dispatcher reads the whole frame back
+    /// anyway, and treats a size the app still keeps like a minimum size. Best effort: a failure is logged.
     private static func resizeAgainIfCutShort(_ frame: CGRect, _ window: some FrameWriting) {
-        guard let actual = try? window.frame(), FrameWrite.wasCutShort(actual.size, target: frame.size) else { return }
-        let got = String(describing: actual)
-        let wanted = String(describing: frame)
+        guard let size = try? window.size(), FrameWrite.wasCutShort(size, target: frame.size) else { return }
+        let got = String(describing: size)
+        let wanted = String(describing: frame.size)
         Log.ax.debug("Resize cut short at \(got, privacy: .public) for \(wanted, privacy: .public); asking again")
-        logFailure("resize again") {
-            try window.setPosition(frame.origin)
-            try window.setSize(frame.size)
-        }
+        logFailure("resize again") { try window.setSize(frame.size) }
     }
 
     /// The window in `attribute` of `app` (main or focused), if it is a standard window.

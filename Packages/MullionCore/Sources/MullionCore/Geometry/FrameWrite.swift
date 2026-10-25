@@ -1,31 +1,31 @@
 import CoreGraphics
 
-/// How a window's frame is written over Accessibility, which sets size and position separately
-/// (ARCHITECTURE §5). All frames are in AX space.
+/// How a window's frame is written over Accessibility, which sets size and position separately:
+/// a size before the move, the position, then the target size (ARCHITECTURE §5). All frames are in AX space.
 public enum FrameWrite {
-    /// Which of the two goes first.
-    public enum Order: Equatable, Sendable {
-        /// Size, then position, then size again. macOS keeps a window's size within its current
-        /// display, so this is the order for a window coming from another one.
-        case sizeFirst
-        /// Position, then size.
-        case positionFirst
-    }
-
-    /// The order that keeps the window on screen between the writes.
+    /// The size to give the window before moving it, or `nil` when it only needs moving first.
     ///
-    /// Resizing a right-half window to the full width in place stretches it past the screen edge, where
-    /// apps can cut the resize short and then drop the final one (#16). So on the same screen, whichever
-    /// order overflows `visibleFrame` less goes first. A tie keeps size first.
-    public static func order(moving window: CGRect, to target: CGRect, within visibleFrame: CGRect) -> Order {
-        guard visibleFrame.insetBy(dx: -1, dy: -1).contains(window) else { return .sizeFirst }
-        let resizedInPlace = overflow(of: CGRect(origin: window.origin, size: target.size), beyond: visibleFrame)
-        let movedFirst = overflow(of: CGRect(origin: target.origin, size: window.size), beyond: visibleFrame)
-        return movedFirst + 1 < resizedInPlace ? .positionFirst : .sizeFirst
+    /// On one screen, the window first shrinks to the smaller of its size and the target's in each
+    /// direction. That size fits both where the window is and where it goes, so no write stretches it
+    /// past the screen edge, where apps can cut a resize short and then drop the next one (#16).
+    ///
+    /// A window outside `visibleFrame` (coming from another display) or a target outside it (Restore or
+    /// Grow across two displays) gets the target size first: macOS keeps a window's size within its
+    /// current display, so the size is written before and after the move.
+    public static func sizeBeforeMove(
+        moving window: CGRect,
+        to target: CGRect,
+        within visibleFrame: CGRect
+    ) -> CGSize? {
+        let bounds = visibleFrame.insetBy(dx: -1, dy: -1)
+        guard bounds.contains(window), bounds.contains(target) else { return target.size }
+        let shrunk = CGSize(width: min(window.width, target.width), height: min(window.height, target.height))
+        return shrunk == window.size ? nil : shrunk
     }
 
     /// True when the app kept a smaller size than `target`, so the resize is worth asking for again.
-    /// A minimum size only ever makes a window larger, and apps that round sizes stay within 2 pt.
+    /// A minimum size only ever makes a window larger. Apps that size windows in whole character
+    /// cells (Terminal) or keep a maximum size come out smaller too; asking them again costs one write.
     public static func wasCutShort(_ size: CGSize, target: CGSize) -> Bool {
         size.width < target.width - tolerance || size.height < target.height - tolerance
     }
@@ -33,10 +33,4 @@ public enum FrameWrite {
     // MARK: Private
 
     private static let tolerance: CGFloat = 2
-
-    /// How far `frame` reaches past each edge of `bounds`, added up.
-    private static func overflow(of frame: CGRect, beyond bounds: CGRect) -> CGFloat {
-        max(0, bounds.minX - frame.minX) + max(0, frame.maxX - bounds.maxX)
-            + max(0, bounds.minY - frame.minY) + max(0, frame.maxY - bounds.maxY)
-    }
 }

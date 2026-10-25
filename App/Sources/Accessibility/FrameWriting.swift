@@ -5,5 +5,5 @@ import CoreGraphics
 protocol FrameWriting {
     func setSize(_ size: CGSize) throws
     func setPosition(_ origin: CGPoint) throws
-    func frame() throws -> CGRect
+    func size() throws -> CGSize
 }

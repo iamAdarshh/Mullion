@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Fixed
-- *Top Half*, *Bottom Half* or *Maximize* right after *Right Half* could leave the window half width in the left corner (seen with VS Code). Mullion now moves a window before resizing it when resizing in place would stretch it past the screen edge, and asks once more when an app keeps a smaller size. ([#16](https://github.com/iamAdarshh/Mullion/issues/16))
+- *Top Half*, *Bottom Half* or *Maximize* right after *Right Half* could leave the window half width in the left corner (seen with VS Code). Mullion now shrinks a window before moving it, so no step stretches it past the screen edge, and asks once more when an app keeps a smaller size. ([#16](https://github.com/iamAdarshh/Mullion/issues/16))
 
 ## [1.0.0] - 2026-10-21
 

@@ -44,7 +44,7 @@ guard CFGetTypeID(value) == AXValueGetTypeID() else { throw AXWindowError.unexpe
 // swiftlint:disable:next force_cast
 AXValueGetValue(value as! AXValue, .cgPoint, &out)  // as! is safe: type checked on the line above
 ```
-- The order is **size → position → size** (see ARCHITECTURE §5).
+- The order is **size → position → size**, where the first size comes from `FrameWrite.sizeBeforeMove` so no write stretches the window off screen (see ARCHITECTURE §5).
 - `AXEnhancedUserInterface` on the *application* element: read it, set it to false, move the window, then restore the original value.
 
 ## Screens
