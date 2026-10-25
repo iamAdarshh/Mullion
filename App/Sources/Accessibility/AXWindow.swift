@@ -167,7 +167,14 @@ enum AXWindow {
     /// size once more. Only the size is read and written; the dispatcher reads the whole frame back
     /// anyway, and treats a size the app still keeps like a minimum size. Best effort: a failure is logged.
     private static func resizeAgainIfCutShort(_ frame: CGRect, _ window: some FrameWriting) {
-        guard let size = try? window.size(), FrameWrite.wasCutShort(size, target: frame.size) else { return }
+        let size: CGSize
+        do {
+            size = try window.size()
+        } catch {
+            Log.ax.debug("AX step 'read size' failed: \(String(describing: error), privacy: .public)")
+            return
+        }
+        guard FrameWrite.wasCutShort(size, target: frame.size) else { return }
         let got = String(describing: size)
         let wanted = String(describing: frame.size)
         Log.ax.debug("Resize cut short at \(got, privacy: .public) for \(wanted, privacy: .public); asking again")

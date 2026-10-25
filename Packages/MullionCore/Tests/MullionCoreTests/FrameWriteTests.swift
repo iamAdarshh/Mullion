@@ -45,6 +45,27 @@ struct FrameWriteTests {
         #expect(first == CGSize(width: 735, height: 460))
     }
 
+    /// Tiles are rounded to whole points, so a window can end half a point past a fractional visible
+    /// frame (980.5) and still count as on it.
+    @Test func aTileRoundedPastAFractionalEdgeStillShrinksFirst() {
+        let visible = CGRect(x: 0, y: 37.5, width: 1470, height: 943)
+        let bottomHalf = CGRect(x: 0, y: 509, width: 1470, height: 471.5).roundedToEdges()
+        let rightHalf = CGRect(x: 735, y: 37.5, width: 735, height: 943).roundedToEdges()
+
+        let first = FrameWrite.sizeBeforeMove(moving: bottomHalf, to: rightHalf, within: visible)
+
+        #expect(first == CGSize(width: 735, height: 472))
+    }
+
+    /// Restore or Grow across two displays: the size is written before and after the move.
+    @Test func aTargetSpanningTwoDisplaysGetsItsSizeFirst() {
+        let visible = Screens.macBookAir13.visibleFrame
+        let window = CGRect(x: 800, y: 200, width: 600, height: 300)
+        let spanning = CGRect(x: 1000, y: 170, width: 1100, height: 360)
+
+        #expect(FrameWrite.sizeBeforeMove(moving: window, to: spanning, within: visible) == spanning.size)
+    }
+
     /// A window already no bigger than the target only needs moving, then resizing.
     @Test func aSmallerWindowIsMovedFirst() {
         let floating = CGRect(x: 100, y: 200, width: 600, height: 300)
