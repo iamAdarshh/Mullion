@@ -9,7 +9,7 @@ Thanks for helping! Mullion is a small project with a solo maintainer, so these 
 
 ## Hard rules
 1. **Public macOS APIs only.** PRs using private frameworks or symbols are closed ([ADR-0003](docs/adr/0003-public-apis-only.md)).
-2. **No network access or telemetry.**
+2. **No telemetry, and no network access** beyond the opt-in Sparkle update check and download ([ADR-0008](docs/adr/0008-in-app-updates-with-sparkle.md)).
 3. **Geometry goes in `MullionCore`, with tests.**
 4. **No GPL code**, including code copied or adapted from GPL projects. Mullion is MIT.
 5. New dependencies need an ADR update ([ADR-0005](docs/adr/0005-dependencies.md)).

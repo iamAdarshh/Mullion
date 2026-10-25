@@ -65,7 +65,7 @@ Accepted for v1.0 ([test run](test-runs/M3-2026-10-21.md)): the full matrix on t
 
 ## v1.1: Signed releases and updates
 Spec: [features/updates.md](features/updates.md) · Decisions: [ADR-0007](adr/0007-self-signed-release-certificate.md), [ADR-0008](adr/0008-in-app-updates-with-sparkle.md). Done before M4, because every update until then costs users a manual re-grant of Accessibility.
-- [ ] Releases signed with the self-signed `Mullion Release` certificate in `release.yml`, with `disable-library-validation`; CI checks the designated requirement
+- [ ] Releases signed with the self-signed `Mullion Release` certificate in `release.yml`, with `disable-library-validation`; CI compares the designated requirement with the committed `Config/release-designated-requirement.txt`
 - [ ] Sparkle: *Check for Updates…*, the automatic-check prompt and Settings switches, gentle reminders
 - [ ] Release workflow signs the ZIP with EdDSA and publishes `appcast.xml`
 - [ ] End-to-end test: a signed build updates itself from a local appcast and keeps Accessibility and *Launch at login*

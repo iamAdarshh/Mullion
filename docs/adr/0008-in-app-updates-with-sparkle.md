@@ -38,7 +38,11 @@ We will add **Sparkle 2.10.0** (pinned exactly, through Swift Package Manager in
 ## Consequences
 - Positive: one-click updates that keep the Accessibility permission; release notes in the app; the Homebrew cask can set `auto_updates true`.
 - Negative / accepted trade-offs:
-  - Mullion is no longer "no network, ever". It's "no network unless you ask for updates": CLAUDE.md rule 5, PRD NFR-3, SECURITY.md and the README say so.
-  - A second secret to keep safe: if the EdDSA key is lost, users of older versions can't take the next update and must install it by hand.
+  - Mullion is no longer "no network, ever". It's "no network unless you ask for updates". CLAUDE.md rule 5, PRD NFR-3, CONTRIBUTING.md and REVIEW.md say so now; SECURITY.md, the README and the onboarding text change with the Sparkle PR.
+  - Two secrets, each enough to authorise an update. Sparkle accepts an update if its EdDSA signature is valid **or** its code signature matches the installed app's, which with ADR-0007 means "signed with `Mullion Release`". So:
+    - if the EdDSA key is lost, an update signed with the release certificate can carry a new key, and the key is rotated without users noticing;
+    - if the release certificate is lost, updates still verify with the EdDSA key, but the Accessibility permission resets once (ADR-0007);
+    - if both are lost, users install the next version by hand;
+    - whoever holds the `.p12` alone can produce an accepted update, so it's protected like the EdDSA key.
   - Sparkle's framework, its `Autoupdate` tool and `Updater.app` must all be signed with the release certificate.
-- Follow-ups: the [updates spec](../features/updates.md); the release workflow steps; an end-to-end test that updates a signed build from a local appcast and checks the permission and Gatekeeper; manual test rows; `auto_updates true` in the cask.
+- Follow-ups: the [updates spec](../features/updates.md); the release workflow steps; an end-to-end test that updates a signed build from a local appcast and checks the permission and Gatekeeper; manual test rows; `auto_updates true` in the cask; with the Sparkle PR, the "never goes online" text in the onboarding window, the About tab, the README and SECURITY.md; with the signing PR, the install note in `release.yml`, RELEASING.md and the comment in `App/Mullion.entitlements`; Sparkle's bundled licence notices in Settings → About.

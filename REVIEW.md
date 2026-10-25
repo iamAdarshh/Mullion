@@ -7,7 +7,7 @@ Reserve **Important** for findings that would:
 - **Break window placement:** wrong rect math, AppKit/AX coordinate mix-ups, ignoring the visible frame, a window landing on the wrong display.
 - **Crash or hang the app or the user's input:** force-unwraps on AX/CF values, `as!` on a CF value without a preceding `CFGetTypeID` check, blocking AX calls on the main thread, an event-tap callback doing heavy work, a missing `tapDisabledByTimeout` handling.
 - **Swallow user input unexpectedly:** any path where a click or key reaches Mullion and isn't passed on when it should be.
-- **Violate trust:** private APIs ([ADR-0003](docs/adr/0003-public-apis-only.md)), network calls, logging window titles or contents at default/info level, writing to other apps' or the system's preferences.
+- **Violate trust:** private APIs ([ADR-0003](docs/adr/0003-public-apis-only.md)), network calls other than Sparkle's opt-in update check ([ADR-0008](docs/adr/0008-in-app-updates-with-sparkle.md); a new feed URL, setting `SUEnableAutomaticChecks`, or turning on `SUEnableSystemProfiling` counts as a violation), logging window titles or contents at default/info level, writing to other apps' or the system's preferences.
 - **Lose user data:** non-atomic config writes, a schema change without a migration, deleting a corrupt file instead of backing it up.
 - **Data races:** Swift 6 concurrency violations, an `@unchecked Sendable` with no justification comment.
 

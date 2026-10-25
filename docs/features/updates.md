@@ -29,7 +29,7 @@ Info.plist keys (set at build time):
 | Input | Effect |
 |---|---|
 | First launch | No update check and no prompt. The Accessibility onboarding has the stage to itself. |
-| Second launch | Sparkle asks once: *Check for updates automatically?* The answer sets *Check for updates automatically* in Settings → General. Until it's answered, nothing is fetched. |
+| Second launch (the second time the app starts, not reopening it while it runs) | Sparkle asks once: *Check for updates automatically?*, with a checkbox to also download and install them automatically, unchecked. The answers set both switches in Settings → General. Until it's answered, nothing is fetched. If Accessibility access is still missing, the question waits until it's granted, so it never competes with the onboarding window. |
 | Menu → **Check for Updates…** | Checks now, even if automatic checks are off. Shows *You're up to date* or the update window. Disabled while a check is already running. Works while Accessibility access is missing. |
 | Scheduled check (automatic checks on) | At most once a day. If an update is found, the menu gets **Update Available: Mullion X.Y.Z…** at the top, and the update window opens without taking focus from the app you're using. Errors (offline, GitHub down) are only logged. |
 | Update window | Shows the new version and its release notes (the CHANGELOG section). Buttons: **Install Update**, **Remind Me Later**, **Skip This Version**. |
@@ -43,9 +43,15 @@ Info.plist keys (set at build time):
 - **Updater:** one `SPUStandardUpdaterController(startingUpdater: true, updaterDelegate:userDriverDelegate:)`, owned by the `@MainActor` app delegate. *Check for Updates…* calls `checkForUpdates(_:)`, and its enabled state follows `updater.canCheckForUpdates`, which is observed with key-value observation.
 - **Menu bar app:** Mullion is `LSUIElement`, so it has no Dock icon to bring forward.
   - Before a user-initiated check, the app activates itself so Sparkle's window comes to the front.
-  - Scheduled checks use Sparkle's gentle reminders (`SPUStandardUserDriverDelegate.supportsGentleScheduledUpdateReminders` = `true`), which drive the *Update Available* menu item instead of stealing focus.
-- **Settings:** a small `@Observable` `UpdateSettings` model on `@MainActor` wraps `automaticallyChecksForUpdates`, `automaticallyDownloadsUpdates` and `lastUpdateCheckDate`, for the SwiftUI General tab. Strings go in `Localizable.xcstrings`.
-- **Signing:** non-sandboxed apps don't need Sparkle's XPC services. The `Downloader.xpc` and `Installer.xpc` services are removed from the embedded framework at build time. `Autoupdate` and `Updater.app` stay, and are signed with the release certificate. The app has `disable-library-validation` (ADR-0007).
+  - Scheduled checks use Sparkle's gentle reminders: `SPUStandardUserDriverDelegate.supportsGentleScheduledUpdateReminders` = `true`, so the alert doesn't steal focus. The delegate adds the *Update Available* menu item in `standardUserDriverWillHandleShowingUpdate(_:forUpdate:state:)` and removes it in `standardUserDriverDidReceiveUserAttention(forUpdate:)` and `standardUserDriverWillFinishUpdateSession()`; Sparkle doesn't add it by itself.
+  - `SPUUpdaterDelegate.updaterShouldPromptForPermissionToCheckForUpdates(_:)` returns `false` while Accessibility access is missing, so the second-launch question waits for onboarding.
+- **Settings:** a small `@Observable` `UpdateSettings` model on `@MainActor` wraps `automaticallyChecksForUpdates`, `automaticallyDownloadsUpdates` and `lastUpdateCheckDate`, for the SwiftUI General tab. The *Download and install* switch is enabled from `updater.allowsAutomaticUpdates` (observable with key-value observation), not re-derived. Strings go in `Localizable.xcstrings`.
+- **Signing:** non-sandboxed apps don't need Sparkle's XPC services. Sparkle 2.10.0 arrives ad-hoc signed, and Xcode's *Code Sign On Copy* only re-signs the framework's outer bundle, so the build:
+  1. removes `XPCServices/` (`Downloader.xpc`, `Installer.xpc`) from the embedded framework, which breaks its seal;
+  2. re-signs from the inside out with the release certificate and `--options runtime`: `Autoupdate`, `Updater.app`, `Sparkle.framework`, then the app;
+  3. verifies with `codesign --verify --deep --strict`, and checks the designated requirements against `Config/release-designated-requirement.txt` (ADR-0007).
+
+  The app has `disable-library-validation` (ADR-0007).
 - **Release workflow (`release.yml`):**
   - Downloads Sparkle's release tools (`Sparkle-2.10.0.tar.xz`, SHA-256 pinned).
   - Signs `Mullion-X.Y.Z.zip` with `sign_update` and the `SPARKLE_ED_PRIVATE_KEY` secret.
@@ -62,7 +68,7 @@ Info.plist keys (set at build time):
 ## Edge cases
 - **Running from the DMG or from Downloads with the quarantine flag (App Translocation):** the app can't replace itself, and Sparkle says so and asks the user to move it to Applications.
 - **Offline or GitHub unreachable:** a manual check shows Sparkle's error. A scheduled check only logs.
-- **A bad or missing signature** in the downloaded update: rejected, and the installed app is left untouched.
+- **A bad signature** in the downloaded update: rejected, and the installed app is left untouched. Sparkle accepts an update when its EdDSA signature is valid *or* its code signature matches the installed app's (ADR-0008). So an archive changed after signing is rejected, while a build signed with `Mullion Release` and its own, consistent EdDSA key is accepted: that's how a lost EdDSA key is rotated.
 - **Updating from 1.0.x:** not possible, because those builds don't contain Sparkle. 1.1.0 is installed by hand once, and its release notes explain the last re-grant of Accessibility.
 - **Homebrew installs:** Sparkle updates the app in place. The cask sets `auto_updates true`, so `brew upgrade` doesn't fight it.
 - **Accessibility missing:** updates still work. After relaunch, the usual onboarding and warning logic applies.
@@ -71,13 +77,13 @@ Info.plist keys (set at build time):
 
 ## Acceptance criteria
 - **UP-1:** On a fresh install, Mullion makes no network request until the user agrees to automatic checks or chooses *Check for Updates…*. Verify with a network monitor across first launch, second launch with the prompt declined, and an hour of use.
-- **UP-2:** The second launch shows the automatic-check prompt once. The answer is reflected in Settings → General, and the prompt doesn't come back.
+- **UP-2:** The second launch shows the automatic-check prompt once, with *download and install automatically* unchecked. Both answers are reflected in Settings → General, and the prompt doesn't come back. With Accessibility missing at the second launch, the prompt waits until access is granted.
 - **UP-3:** *Check for Updates…* with no newer version shows *You're up to date*.
 - **UP-4:** With a newer version in the feed, the update window shows its version and release notes, and *Install Update* replaces the app and relaunches the new version.
 - **UP-5:** After an update, shortcuts and drag-to-snap work without re-granting Accessibility.
 - **UP-6:** After an update, no Gatekeeper prompt appears.
-- **UP-7:** An update whose EdDSA signature doesn't match is rejected, and the installed app still launches unchanged.
-- **UP-8:** With *Download and install updates automatically* on, a found update is installed when Mullion quits, without any prompt. It is off by default.
+- **UP-7:** Two tampered updates are rejected, and the installed app still launches unchanged: (a) the ZIP is modified after its EdDSA signature was made, with the same keys; (b) an ad-hoc signed build whose EdDSA signature doesn't match the installed public key.
+- **UP-8:** With *Download and install updates automatically* on (in Settings or in the second-launch prompt), a found update is installed when Mullion quits, without any prompt. It is off by default.
 - **UP-9:** Draft and pre-release (`-beta`) releases are never offered.
 - **UP-10:** *Launch at login* is still on after an update.
 - **UP-11:** With *Check for updates automatically* off, no request is made over 24 hours of use.
