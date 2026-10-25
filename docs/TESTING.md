@@ -29,12 +29,12 @@
 protocol WindowControlling: Sendable {
     func focusedWindow(pid: pid_t) async throws -> WindowRef?
     func frame(of: WindowRef) async throws -> CGRect
-    func setFrame(_: CGRect, of: WindowRef) async throws
+    func setFrame(_: CGRect, of: WindowRef, sizeBeforeMove: CGSize?) async throws
     func isAlive(_: WindowRef) async -> Bool
 }
 @MainActor protocol ScreenProviding { var screens: [ScreenGeometry] { get } }
 ```
-There is no public AX attribute for a window's minimum size, so the dispatcher sets the frame, reads it back, and re-anchors it when the app kept a different size. `FakeWindowController` records calls and can simulate minimum sizes, fixed-size windows, closed windows and AX errors.
+There is no public AX attribute for a window's minimum size, so the dispatcher sets the frame, reads it back, and re-anchors it when the app kept a different size. `FakeWindowController` records calls (with the size asked for before each move) and can simulate minimum sizes, fixed-size windows, closed windows and AX errors. The write sequence itself is tested in `AXWindowTests` against a simulated window that cuts a resize short at the screen edge and can then drop the next one, as #16 suggests.
 
 ## Manual test matrix
 Run the rows for the milestone being closed. Record the results in the milestone's tracking issue.

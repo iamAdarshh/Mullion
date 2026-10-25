@@ -140,7 +140,7 @@ struct ActionDispatcherDropTests {
         await harness.addWindows()
         await harness.drop()
         let moved = Self.leftHalf.offsetBy(dx: 600, dy: 0)
-        try? await harness.windows.setFrame(moved, of: harness.dragged)
+        try? await harness.windows.setFrame(moved, of: harness.dragged, sizeBeforeMove: nil)
         await harness.drop(.rightHalf, at: moved, from: Self.leftHalf)
         await harness.windows.focus(harness.dragged)
         await harness.dispatcher.perform(.restore).value
@@ -165,7 +165,7 @@ struct ActionDispatcherDropTests {
         await harness.addWindows()
         await harness.drop()
         let moved = Self.leftHalf.offsetBy(dx: 30, dy: 20)
-        try? await harness.windows.setFrame(moved, of: harness.dragged)
+        try? await harness.windows.setFrame(moved, of: harness.dragged, sizeBeforeMove: nil)
         await harness.drop(at: moved)
         #expect(await harness.windows.frame(ofWindow: harness.dragged) == Self.leftHalf)
     }
@@ -234,7 +234,7 @@ extension ActionDispatcherDropTests {
     private func snapThenDrag(_ harness: Harness, to frame: CGRect = draggedAway) async {
         await harness.addWindows()
         await harness.drop()
-        try? await harness.windows.setFrame(frame, of: harness.dragged)
+        try? await harness.windows.setFrame(frame, of: harness.dragged, sizeBeforeMove: nil)
     }
 
     private func dragAway(_ harness: Harness, to frame: CGRect = draggedAway, cursor: CGPoint = grab) async {

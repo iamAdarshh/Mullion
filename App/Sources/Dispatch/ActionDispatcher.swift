@@ -199,7 +199,8 @@ final class ActionDispatcher {
         var moved = false
         let actual: CGRect
         do {
-            try await windows.setFrame(plan.target, of: window)
+            let first = FrameWrite.sizeBeforeMove(moving: current, to: plan.target, within: plan.screen.visibleFrame)
+            try await windows.setFrame(plan.target, of: window, sizeBeforeMove: first)
             moved = true
             actual = try await correctedFrame(of: window, plan: plan)
         } catch {
@@ -231,7 +232,8 @@ final class ActionDispatcher {
                 actual: actual, target: plan.target, visibleFrame: plan.screen.visibleFrame
             )
             if !adjusted.isApproximatelyEqual(to: actual, tolerance: Self.frameTolerance) {
-                try await windows.setFrame(adjusted, of: window)
+                let first = FrameWrite.sizeBeforeMove(moving: actual, to: adjusted, within: plan.screen.visibleFrame)
+                try await windows.setFrame(adjusted, of: window, sizeBeforeMove: first)
                 actual = try await windows.frame(of: window)
             }
         }
