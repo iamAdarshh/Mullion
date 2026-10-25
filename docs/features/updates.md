@@ -1,6 +1,6 @@
 # Feature spec: In-app updates
 
-**Milestone:** v1.1 (signed releases and updates). **Status:** Draft. **Inspired by:** Rectangle (Sparkle)
+**Milestone:** v1.1 (signed releases and updates). **Status:** Accepted. **Inspired by:** Rectangle (Sparkle)
 
 ## Summary
 Mullion checks for new releases, shows what changed, and installs an update in place with one click, keeping the Accessibility permission. It uses [Sparkle](https://sparkle-project.org) ([ADR-0008](../adr/0008-in-app-updates-with-sparkle.md)) with releases signed by a stable certificate ([ADR-0007](../adr/0007-self-signed-release-certificate.md)). Network access is opt-in: nothing is fetched until the user asks or agrees to automatic checks.
@@ -53,7 +53,7 @@ Info.plist keys (set at build time):
     - `sparkle:version` = `CURRENT_PROJECT_VERSION`, which must increase with every release;
     - `sparkle:shortVersionString` = `MARKETING_VERSION`;
     - `sparkle:minimumSystemVersion` = `14.0`;
-    - `sparkle:edSignature`, `length`, and the release notes.
+    - `sparkle:edSignature`, `length`, and the release notes as inline HTML in `<description>`, generated from the CHANGELOG section, so showing them needs no second request.
   - Uploads `appcast.xml` as a release asset of the draft. GitHub's `latest` URL only resolves to published, non-pre-release releases.
 - **Threads:** Sparkle does its network and install work on its own queues and calls back on the main thread. No AX work is involved.
 - **Permissions:** none new. Installing into `/Applications` as a standard user may ask for an administrator password, which Sparkle's installer handles.
@@ -84,7 +84,10 @@ Info.plist keys (set at build time):
 - **UP-12:** *Check for Updates…* is disabled while a check runs, and works while Accessibility access is missing.
 - **UP-13:** A scheduled check that finds an update adds *Update Available: Mullion X.Y.Z…* to the menu and doesn't take focus from the frontmost app.
 
+## Decisions (2026-10-25)
+- **Release notes** are inline HTML generated from the CHANGELOG section, not a `sparkle:releaseNotesLink` to the GitHub page, so no web view and no second request.
+- **Check interval:** one day (Sparkle's default).
+- **No badge** on the menu bar icon while an update waits; the *Update Available* menu item is enough.
+
 ## Open questions
-- Release notes: inline HTML generated from the CHANGELOG section (no extra request), or `sparkle:releaseNotesLink` to the GitHub release page (a web view and a second request)? Leaning towards inline HTML.
-- Check interval: one day (Sparkle's default) or two days, like Rectangle?
-- Should the menu bar icon show a badge while an update is waiting, or is the menu item enough?
+None.

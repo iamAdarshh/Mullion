@@ -1,6 +1,6 @@
 # ADR-0008: In-app updates with Sparkle
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-25
 - **Deciders:** @iamAdarshh
 

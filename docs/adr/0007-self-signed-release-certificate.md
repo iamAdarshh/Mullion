@@ -1,6 +1,6 @@
 # ADR-0007: Sign releases with a stable self-signed certificate
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-25
 - **Deciders:** @iamAdarshh
 
