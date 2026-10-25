@@ -65,7 +65,7 @@ See [docs/PRD.md](docs/PRD.md) for the full specification and [docs/SHORTCUTS.md
 
 **Why the warning?** Mullion is free and built by one person without a paid Apple Developer account, so it isn't notarized by Apple. It's [open source](https://github.com/iamAdarshh/Mullion), never goes online, and every release is built by GitHub Actions from the tagged source, with SHA-256 checksums on the release page.
 
-After updating, you may need to turn Mullion's Accessibility permission off and on again: without an Apple signing certificate, macOS treats each new version as a different app.
+After updating, Mullion needs the Accessibility permission again: without an Apple signing certificate, macOS treats each new version as a different app, and turning the old switch off and on isn't enough. Quit Mullion, select it under *System Settings → Privacy & Security → Accessibility* and remove it with **–**, then open Mullion and grant the permission again.
 
 ### Build from source
 Needs Xcode 26 or later (Swift 6.2). Full instructions are in [docs/SETUP.md](docs/SETUP.md).

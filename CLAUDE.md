@@ -30,7 +30,7 @@ make run          # build + launch Mullion-Debug.app (needs the human for permis
 2. **Core works in AX coordinates** (top-left origin of the primary screen). Convert only via `CoordinateSpace`. Never write `screenHeight - y` anywhere else.
 3. **All AX calls go through `AXQueue` / `AXWindow`.** No raw `AXUIElementSetAttributeValue` in feature code. Every AX call handles `AXError`. No force-unwraps. `as!` on a CF value is allowed only immediately after a `CFGetTypeID` check (pattern in the `macos-window-apis` skill).
 4. **Public APIs only** ([ADR-0003](docs/adr/0003-public-apis-only.md)). No private symbols, `dlopen`, `@_silgen_name`, SkyLight/CGS, or asking users to disable SIP.
-5. **No network calls** in v1. Nothing that phones home.
+5. **No network calls**, except the opt-in Sparkle update check and download ([ADR-0008](docs/adr/0008-in-app-updates-with-sparkle.md)). Nothing else phones home.
 6. **Swift 6 strict concurrency.** UI on `@MainActor`, AX work on `AXQueue`. `@unchecked Sendable` only with a comment explaining why it's safe.
 7. **No new dependencies** without an ADR update ([ADR-0005](docs/adr/0005-dependencies.md)). Only stable, released versions, pinned exactly.
 

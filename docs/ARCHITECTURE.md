@@ -70,7 +70,8 @@ mullion/
 | Login item | `SMAppService.mainApp` (built in) | |
 | Persistence | `UserDefaults` for preferences; JSON files in Application Support for layouts, workspaces and app memory | |
 | Logging | `os.Logger`, subsystem = bundle ID | |
-| Distribution | Outside the App Store; an ad-hoc signed DMG (not notarized, see [RELEASING.md](RELEASING.md)) and a Homebrew cask in our own tap | [0002](adr/0002-distribution-outside-app-store.md) |
+| Distribution | Outside the App Store; a DMG (not notarized, see [RELEASING.md](RELEASING.md)) and a Homebrew cask in our own tap. Ad-hoc signed up to v1.0.x, signed with a stable self-signed certificate from v1.1 so the Accessibility permission survives updates | [0002](adr/0002-distribution-outside-app-store.md), [0007](adr/0007-self-signed-release-certificate.md) |
+| Updates | Sparkle 2 (from v1.1): opt-in checks against an appcast on GitHub Releases, EdDSA-signed updates installed in place | [0008](adr/0008-in-app-updates-with-sparkle.md) |
 
 ## 4. Coordinate systems (read this before touching geometry)
 macOS uses two global coordinate spaces, and mixing them up is the most common source of bugs in window managers.
