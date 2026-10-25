@@ -199,7 +199,8 @@ final class ActionDispatcher {
         var moved = false
         let actual: CGRect
         do {
-            try await windows.setFrame(plan.target, of: window)
+            let order = FrameWrite.order(moving: current, to: plan.target, within: plan.screen.visibleFrame)
+            try await windows.setFrame(plan.target, of: window, order: order)
             moved = true
             actual = try await correctedFrame(of: window, plan: plan)
         } catch {
@@ -224,13 +225,6 @@ final class ActionDispatcher {
     private func correctedFrame(of window: WindowRef, plan: ActionPlan) async throws -> CGRect {
         var actual = try await windows.frame(of: window)
 
-        // Some apps drop the final resize of a move, for example after the first one was cut short at
-        // the screen edge (#16). Ask once more before taking the size as one the app insists on.
-        if !actual.isApproximatelyEqual(to: plan.target, tolerance: Self.frameTolerance) {
-            try await windows.setFrame(plan.target, of: window)
-            actual = try await windows.frame(of: window)
-        }
-
         // The app kept a different size (minimum size, fixed size, aspect ratio): put the window at
         // the target's origin and, unless the target spanned displays, keep it on the target screen (AC-2).
         if !actual.isApproximatelyEqual(to: plan.target, tolerance: Self.frameTolerance) {
@@ -238,7 +232,8 @@ final class ActionDispatcher {
                 actual: actual, target: plan.target, visibleFrame: plan.screen.visibleFrame
             )
             if !adjusted.isApproximatelyEqual(to: actual, tolerance: Self.frameTolerance) {
-                try await windows.setFrame(adjusted, of: window)
+                let order = FrameWrite.order(moving: actual, to: adjusted, within: plan.screen.visibleFrame)
+                try await windows.setFrame(adjusted, of: window, order: order)
                 actual = try await windows.frame(of: window)
             }
         }

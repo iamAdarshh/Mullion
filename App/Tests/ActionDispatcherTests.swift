@@ -273,31 +273,16 @@ struct ActionDispatcherTests {
         #expect(await harness.frame == CGRect(x: 1000, y: 170, width: 1100, height: 360))
     }
 
-    /// Regression (#16): an app dropped the final resize of Top Half after Right Half, and Mullion took
-    /// the half width it read back as a minimum size, leaving the window in the top-left quarter.
-    @Test func aDroppedResizeIsAskedForAgain() async {
+    /// Regression (#16): resizing a right-half window to the full width in place stretched it past the
+    /// screen edge, where an app cut the resize short, then dropped the final one.
+    @Test func topHalfAfterRightHalfMovesTheWindowBeforeResizingIt() async {
         let harness = Harness()
         await harness.addFocusedWindow()
-        await harness.perform(.rightHalf)
-        await harness.windows.dropResizes()
 
-        await harness.perform(.topHalf)
+        await harness.perform(.rightHalf, .topHalf)
 
+        #expect(await harness.windows.setFrameOrders.last == .positionFirst)
         #expect(await harness.frame == CGRect(x: 0, y: 37, width: 1470, height: 460))
-    }
-
-    @Test func aResizeDroppedAgainKeepsTheSizeTheAppReports() async {
-        let harness = Harness()
-        await harness.addFocusedWindow()
-        await harness.perform(.rightHalf)
-        await harness.windows.dropResizes(2)
-        let moves = await harness.windows.setFrameCalls.count
-
-        await harness.perform(.topHalf)
-
-        // One retry only, then the window stays at the target's origin with the size it kept.
-        #expect(await harness.windows.setFrameCalls.count == moves + 2)
-        #expect(await harness.frame == CGRect(x: 0, y: 37, width: 735, height: 919))
     }
 
     // MARK: Displays (PRD §6.5)

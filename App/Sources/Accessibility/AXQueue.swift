@@ -1,5 +1,6 @@
 import ApplicationServices
 import Dispatch
+import MullionCore
 
 /// Runs every Accessibility read and write, one at a time (ARCHITECTURE §7).
 ///
@@ -25,8 +26,8 @@ actor AXQueue: WindowControlling {
         try AXWindow.frame(of: window.element)
     }
 
-    func setFrame(_ frame: CGRect, of window: WindowRef) throws {
-        try AXWindow.setFrame(frame, of: window.element, pid: window.pid)
+    func setFrame(_ frame: CGRect, of window: WindowRef, order: FrameWrite.Order) throws {
+        try AXWindow.setFrame(frame, of: window.element, pid: window.pid, order: order)
     }
 
     func isAlive(_ window: WindowRef) -> Bool {

@@ -73,14 +73,12 @@ enum AXWindow {
 
     // MARK: Writing
 
-    /// Moves and resizes a window: size, then position, then size again (ARCHITECTURE §5.2).
-    ///
-    /// The first resize can be refused when the window would overflow its current screen, and the
-    /// second one is needed after crossing displays. Apps with `AXEnhancedUserInterface` on (VoiceOver,
-    /// some Electron and Chromium apps) animate or ignore resizes, so it is turned off for the move.
+    /// Moves and resizes a window in `order` (ARCHITECTURE §5.2). Apps with `AXEnhancedUserInterface`
+    /// on (VoiceOver, some Electron and Chromium apps) animate or ignore resizes, so it is turned off
+    /// for the move.
     ///
     /// - Throws: `AXWindowError.incompleteMove` when the window had already changed before the error.
-    static func setFrame(_ frame: CGRect, of window: AXUIElement, pid: pid_t) throws {
+    static func setFrame(_ frame: CGRect, of window: AXUIElement, pid: pid_t, order: FrameWrite.Order) throws {
         // Fixed-size windows (Calculator) can only be moved. Asked before anything is written, so an
         // app that has stopped answering costs one timeout and the window is left untouched.
         var settable = DarwinBoolean(false)
@@ -100,18 +98,27 @@ enum AXWindow {
             }
         }
 
+        try write(frame, order: order, resizable: resizable, to: ElementWriter(window: window))
+    }
+
+    /// The writes of `setFrame`. With `.sizeFirst`, the first resize may be refused while the window
+    /// would overflow its current screen; the final one is needed after crossing displays.
+    static func write(_ frame: CGRect, order: FrameWrite.Order, resizable: Bool, to window: some FrameWriting) throws {
         var changed = false
-        if resizable {
-            changed = logFailure("first resize") { try setSize(window, frame.size) }
+        if resizable, order == .sizeFirst {
+            changed = logFailure("first resize") { try window.setSize(frame.size) }
         }
         do {
-            try setPosition(window, frame.origin)
+            try window.setPosition(frame.origin)
             changed = true
             if resizable {
-                try setSize(window, frame.size)
+                try window.setSize(frame.size)
             }
         } catch let error as AXWindowError where changed {
             throw AXWindowError.incompleteMove(error)
+        }
+        if resizable {
+            resizeAgainIfCutShort(frame, window)
         }
     }
 
@@ -133,6 +140,37 @@ enum AXWindow {
     }
 
     // MARK: Private
+
+    /// `FrameWriting` for a real window.
+    private struct ElementWriter: FrameWriting {
+        let window: AXUIElement
+
+        func setSize(_ size: CGSize) throws {
+            try AXWindow.setSize(window, size)
+        }
+
+        func setPosition(_ origin: CGPoint) throws {
+            try AXWindow.setPosition(window, origin)
+        }
+
+        func frame() throws -> CGRect {
+            try AXWindow.frame(of: window)
+        }
+    }
+
+    /// Some apps cut a resize short or drop it (#16). A window smaller than `frame` fits at its origin,
+    /// so position then size can't overflow, and is asked for once more. Best effort: the caller reads
+    /// the frame back anyway, and treats a size the app still keeps like a minimum size.
+    private static func resizeAgainIfCutShort(_ frame: CGRect, _ window: some FrameWriting) {
+        guard let actual = try? window.frame(), FrameWrite.wasCutShort(actual.size, target: frame.size) else { return }
+        let got = String(describing: actual)
+        let wanted = String(describing: frame)
+        Log.ax.debug("Resize cut short at \(got, privacy: .public) for \(wanted, privacy: .public); asking again")
+        logFailure("resize again") {
+            try window.setPosition(frame.origin)
+            try window.setSize(frame.size)
+        }
+    }
 
     /// The window in `attribute` of `app` (main or focused), if it is a standard window.
     private static func standardWindow(_ app: AXUIElement, _ attribute: String) throws -> AXUIElement? {

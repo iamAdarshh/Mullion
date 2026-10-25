@@ -34,7 +34,7 @@ protocol WindowControlling: Sendable {
 }
 @MainActor protocol ScreenProviding { var screens: [ScreenGeometry] { get } }
 ```
-There is no public AX attribute for a window's minimum size, so the dispatcher sets the frame, reads it back, and re-anchors it when the app kept a different size. `FakeWindowController` records calls and can simulate minimum sizes, fixed-size windows, closed windows and AX errors.
+There is no public AX attribute for a window's minimum size, so the dispatcher sets the frame, reads it back, and re-anchors it when the app kept a different size. `FakeWindowController` records calls (with the order size and position were written in) and can simulate minimum sizes, fixed-size windows, closed windows and AX errors. The write sequence itself is tested in `AXWindowTests` against a simulated window that cuts resizes short at the screen edge and drops resizes after a move (#16).
 
 ## Manual test matrix
 Run the rows for the milestone being closed. Record the results in the milestone's tracking issue.

@@ -89,12 +89,13 @@ where `primaryScreenHeight = NSScreen.screens[0].frame.height`. That is the scre
 - Tests must cover screens placed left of, right of, above and below the primary screen, plus mixed scales.
 
 ## 5. Moving a window (AX details)
-`AXWindow.setFrame(_:)`:
+`AXWindow.setFrame(_:of:pid:order:)`, then `ActionDispatcher`:
 1. If the app has `AXEnhancedUserInterface` = true (set by VoiceOver or some Electron and Chromium apps), set it to false, move the window, then restore it. Otherwise some apps animate or ignore the size change.
-2. Set **size**, then **position**, then **size** again. The first resize can be rejected when the window would overflow its current screen, and the final size is needed after moving across displays.
-3. Read the frame back. If it differs from the target by more than 2 pt, set the target once more: some apps drop the final resize, for example after the first one was cut short at the screen edge. If it still differs (because of a minimum size), re-anchor the window to the target's origin and clamp it inside the visible frame.
-4. Every `AXUIElement*` call returns `AXError`. Wrap them in a `throws` API (`AXError.check()`) and never force-unwrap.
-5. AX calls are synchronous IPC to the target app and can block if that app hangs. Set `AXUIElementSetMessagingTimeout(element, 0.25)` and do AX work off the main thread on a serial `AXQueue` actor. Only UI work goes back to `@MainActor`.
+2. Write size and position in the order `FrameWrite.order` (Core) picks. A window coming from another display gets **size**, then **position**, then **size** again: macOS keeps a window's size within its current display, and the final size is needed after the move. On the same display, whichever order keeps the window more on screen goes first: resizing a right-half window to the full width in place would stretch it past the edge, where apps can cut the resize short ([#16](https://github.com/iamAdarshh/Mullion/issues/16)).
+3. If the window came out smaller than the target (an app cut the resize short or dropped it), set position and size once more. Best effort: a failure here is logged, not thrown.
+4. `ActionDispatcher` reads the frame back. If it still differs from the target by more than 2 pt (because of a minimum size), it re-anchors the window to the target's origin and clamps it inside the visible frame.
+5. Every `AXUIElement*` call returns `AXError`. Wrap them in a `throws` API (`AXError.check()`) and never force-unwrap.
+6. AX calls are synchronous IPC to the target app and can block if that app hangs. Set `AXUIElementSetMessagingTimeout(element, 0.25)` and do AX work off the main thread on a serial `AXQueue` actor. Only UI work goes back to `@MainActor`.
 
 Finding the focused window: `AXUIElementCreateApplication(frontmostApp.pid)`, then `kAXFocusedWindowAttribute`. Filter by `kAXSubroleAttribute == kAXStandardWindowSubrole` and skip windows where `AXFullScreen` == true.
 

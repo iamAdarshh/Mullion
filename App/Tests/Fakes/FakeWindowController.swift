@@ -14,6 +14,8 @@ actor FakeWindowController: WindowControlling {
 
     private(set) var windows: [WindowRef: Window] = [:]
     private(set) var setFrameCalls: [CGRect] = []
+    /// The write order of each `setFrame` call.
+    private(set) var setFrameOrders: [FrameWrite.Order] = []
     private(set) var focusedWindowCalls = 0
     /// The pid of every window `isAlive` was asked about, in order.
     private(set) var isAliveCalls: [pid_t] = []
@@ -23,7 +25,6 @@ actor FakeWindowController: WindowControlling {
     private var lookupErrors: [AXWindowError] = []
     private var setFrameError: AXWindowError?
     private var resizesBeforeFailing = false
-    private var droppedResizes = 0
 
     /// A fresh window ref. Creating an application element makes no IPC call, so any pid works.
     /// Pass `second: true` for another window of the same app (it uses a different element).
@@ -49,12 +50,6 @@ actor FakeWindowController: WindowControlling {
     func failSetFrame(with error: AXWindowError?, afterResizing: Bool = false) {
         setFrameError = error
         resizesBeforeFailing = afterResizing
-    }
-
-    /// Makes the next `count` calls to `setFrame` move the window but keep its size, like an app that
-    /// drops the resize after the move (#16).
-    func dropResizes(_ count: Int = 1) {
-        droppedResizes = count
     }
 
     /// Makes the next window lookups throw these errors, one per lookup.
@@ -100,15 +95,14 @@ actor FakeWindowController: WindowControlling {
         return fake.frame
     }
 
-    func setFrame(_ frame: CGRect, of window: WindowRef) throws {
+    func setFrame(_ frame: CGRect, of window: WindowRef, order: FrameWrite.Order) throws {
         if let setFrameError, !resizesBeforeFailing {
             throw setFrameError
         }
         guard var fake = windows[window], fake.isAlive else { throw AXWindowError.elementGone }
         setFrameCalls.append(frame)
-        let dropsResize = droppedResizes > 0
-        droppedResizes = max(droppedResizes - 1, 0)
-        let size = fake.isResizable && !dropsResize
+        setFrameOrders.append(order)
+        let size = fake.isResizable
             ? CGSize(
                 width: max(frame.width, fake.minimumSize.width),
                 height: max(frame.height, fake.minimumSize.height)
