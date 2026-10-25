@@ -6,6 +6,7 @@ Work proceeds in order. Do not start a milestone until the previous one is done,
 
 ```
 v1.0 ─ M0 Scaffold → M1 Keyboard → M2 Drag → M3 Settings & Release
+v1.1 ─ Signed releases & updates
 v2.x ─ M4 Zones core → M5 Zone editor → M6 Grab & Move → M7 App memory → M8 Workspaces
 later ─ M9 Window thumbnail (exploratory)
 ```
@@ -59,6 +60,18 @@ Goal: an empty but correct app skeleton that every later milestone builds on.
 
 **Exit criteria:** the full test matrix passes on macOS 14, 15, and the latest release, and the release checklist is complete.
 Accepted for v1.0 ([test run](test-runs/M3-2026-10-21.md)): the full matrix on the latest release; on macOS 14 and 15 (virtual machines) the release DMG's install, Gatekeeper, onboarding, tiling notice, smoke test, launch at login and memory. The rows left out there cover display and drag behaviour that doesn't vary by macOS version, and the app tests also run on macOS 15 in CI.
+
+---
+
+## v1.1: Signed releases and updates
+Spec: [features/updates.md](features/updates.md) · Decisions: [ADR-0007](adr/0007-self-signed-release-certificate.md), [ADR-0008](adr/0008-in-app-updates-with-sparkle.md). Done before M4, because every update until then costs users a manual re-grant of Accessibility.
+- [ ] Releases signed with the self-signed `Mullion Release` certificate in `release.yml`, with `disable-library-validation`; CI checks the designated requirement
+- [ ] Sparkle: *Check for Updates…*, the automatic-check prompt and Settings switches, gentle reminders
+- [ ] Release workflow signs the ZIP with EdDSA and publishes `appcast.xml`
+- [ ] End-to-end test: a signed build updates itself from a local appcast and keeps Accessibility and *Launch at login*
+- [ ] Homebrew cask `auto_updates true`; README, SECURITY.md and the 1.1.0 release notes explain the last manual re-grant
+
+**Exit criteria:** UP-1 to UP-13 in the spec pass, and an update from 1.1.0 to 1.1.1 keeps the Accessibility permission.
 
 ---
 

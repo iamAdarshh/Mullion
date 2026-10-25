@@ -13,7 +13,7 @@ macOS window management is still mostly manual. Since Sequoia, macOS can tile to
 1. Match Magnet's snapping feature set, with a free and open-source licence (v1).
 2. Add the PowerToys window features that Magnet lacks: zones, grab & move, app memory, and workspaces (v2).
 3. Feel native. The app should be fast (snap in under 50 ms), use little memory (under 40 MB at idle), produce no visible flicker, and behave correctly on multiple displays.
-4. Be trustworthy: use only public APIs, make no network calls, and keep the codebase readable for contributors.
+4. Be trustworthy: use only public APIs, make no network calls except an opt-in update check (v1.1), and keep the codebase readable for contributors.
 
 ## 3. Non-goals
 | Not doing | Why |
@@ -115,13 +115,13 @@ If the user triggers the same half action twice in a row on the same window, and
 
 ### 6.7 Menu bar
 - A template icon (monochrome, shaped like a mullion window glyph).
-- The menu lists every action grouped by type (Halves, Quarters, Thirds, Sixths, Other, Displays), each with its shortcut shown on the right. It also has **Ignore [frontmost app]**, **Settings…**, **About**, and **Quit**.
+- The menu lists every action grouped by type (Halves, Quarters, Thirds, Sixths, Other, Displays), each with its shortcut shown on the right. It also has **Ignore [frontmost app]**, **Settings…**, **About**, **Check for Updates…** (v1.1, [updates spec](features/updates.md)), and **Quit**.
 - The menu bar icon can be hidden. If it is, launching the app a second time opens Settings. While Accessibility access is missing, the icon is shown anyway (with its warning, §6.9.3), and launching the app again opens the welcome window instead.
 
 ### 6.8 Settings window (SwiftUI)
 | Tab | Contents |
 |---|---|
-| General | Launch at login, show menu bar icon, repeated-shortcut behaviour, gap size, almost-maximize %, restore-on-drag-away |
+| General | Launch at login, show menu bar icon, repeated-shortcut behaviour, gap size, almost-maximize %, restore-on-drag-away; from v1.1, *Check for updates automatically* and *Download and install updates automatically* ([updates spec](features/updates.md)) |
 | Shortcuts | A recorder for every action, *Restore defaults*, conflict warnings |
 | Drag | Drag-to-snap on/off, the modifier to disable snapping (⌥ or ⌃), edge and corner size, preview colour and opacity, haptic feedback (Force Touch trackpads) |
 | Ignored Apps | Add or remove apps by bundle ID, with a picker for running apps |
@@ -138,7 +138,7 @@ If the user triggers the same half action twice in a row on the same window, and
 |---|---|
 | NFR-1 | Under 50 ms from key press to window placed (p95, measured using a signpost) |
 | NFR-2 | Idle CPU about 0 % and under 40 MB RSS at idle |
-| NFR-3 | No network access in v1. The app is built with Hardened Runtime. |
+| NFR-3 | No network access in v1.0. From v1.1, the only network access is the opt-in update check and download ([ADR-0008](adr/0008-in-app-updates-with-sparkle.md)): nothing is fetched until the user agrees or chooses *Check for Updates…*. The app is built with Hardened Runtime. |
 | NFR-4 | VoiceOver labels on every Settings control. Supports reduced motion: the drag preview still fades in and out, but jumps between snap areas instead of sliding. |
 | NFR-5 | Localisable from day one (String Catalog). Ships with English, and German as a stretch goal. |
 | NFR-6 | Crash-free: no force-unwraps on AX results, and every AX call handles errors |
@@ -154,6 +154,7 @@ Each v2 feature gets its own spec in [docs/features/](features/) before implemen
 | Grab & Move | [features/grab-and-move.md](features/grab-and-move.md) | Modifier + drag anywhere to move, modifier + right-drag to resize |
 | App memory | [features/app-memory.md](features/app-memory.md) | Opt-in: put an app's new window into its last zone |
 | Workspaces | [features/workspaces.md](features/workspaces.md) | Capture, edit and launch sets of apps and positions |
+| In-app updates (v1.1) | [features/updates.md](features/updates.md) | Opt-in update checks and one-click install in place with Sparkle, keeping the Accessibility permission |
 | Window thumbnail | [features/window-thumbnail.md](features/window-thumbnail.md) | *Exploratory.* A live, view-only mini copy of a window (ScreenCaptureKit) |
 
 ## 8. Success metrics (for a public OSS project)
