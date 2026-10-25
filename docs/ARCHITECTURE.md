@@ -92,7 +92,7 @@ where `primaryScreenHeight = NSScreen.screens[0].frame.height`. That is the scre
 `AXWindow.setFrame(_:)`:
 1. If the app has `AXEnhancedUserInterface` = true (set by VoiceOver or some Electron and Chromium apps), set it to false, move the window, then restore it. Otherwise some apps animate or ignore the size change.
 2. Set **size**, then **position**, then **size** again. The first resize can be rejected when the window would overflow its current screen, and the final size is needed after moving across displays.
-3. Read the frame back. If it differs from the target by more than 2 pt (because of a minimum size), re-anchor the window to the target's origin and clamp it inside the visible frame.
+3. Read the frame back. If it differs from the target by more than 2 pt, set the target once more: some apps drop the final resize, for example after the first one was cut short at the screen edge. If it still differs (because of a minimum size), re-anchor the window to the target's origin and clamp it inside the visible frame.
 4. Every `AXUIElement*` call returns `AXError`. Wrap them in a `throws` API (`AXError.check()`) and never force-unwrap.
 5. AX calls are synchronous IPC to the target app and can block if that app hangs. Set `AXUIElementSetMessagingTimeout(element, 0.25)` and do AX work off the main thread on a serial `AXQueue` actor. Only UI work goes back to `@MainActor`.
 

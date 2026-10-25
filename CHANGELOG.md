@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- *Top Half* or *Bottom Half* right after *Right Half* could leave the window half width in the left corner, in apps that drop a resize (seen in VS Code). Mullion now asks for the size once more before keeping the size the app reports. ([#16](https://github.com/iamAdarshh/Mullion/issues/16))
+
 ## [1.0.0] - 2026-10-21
 
 ### Added
